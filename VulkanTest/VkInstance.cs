@@ -3,37 +3,39 @@ using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
+using Silk.NET.Vulkan.Extensions.KHR;
 
 namespace VulkanTest;
 
 public unsafe class VkInstance : IDisposable
 {
 #if DEBUG
-    private const bool EnableValidationLayers = true;
+    public const bool EnableValidationLayers = true;
 #else
-    private const bool EnableValidationLayers = false;
+    public const bool EnableValidationLayers = false;
 #endif
 
     public Vk Vk { get; }
     public Instance Instance { get; private set; }
-    private VkValidationLayers? _validationLayers;
-    private readonly VkWindow _window;
+    public VkValidationLayers? ValidationLayers { get; private set; }
+    public  VkWindow Window { get; }
     private readonly VkDevice _device;
+
 
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
-        _window = new VkWindow(resolutionWidth, resolutionHeight);
+        Window = new VkWindow(resolutionWidth, resolutionHeight);
         Vk = Vk.GetApi();
-        CreateInstance();
+        CreateInstanceAndDebugMessenger();
         _device = new VkDevice(this);
     }
 
-    private void CreateInstance()
+    private void CreateInstanceAndDebugMessenger()
     {
         if (EnableValidationLayers)
         {
-            _validationLayers = new VkValidationLayers(this);
-            if (!_validationLayers.CheckValidationLayerSupport())
+            ValidationLayers = new VkValidationLayers(this);
+            if (!ValidationLayers.CheckValidationLayerSupport())
                 throw new Exception("validation layers requested, but not available!");
         }
 
@@ -60,12 +62,12 @@ public unsafe class VkInstance : IDisposable
 
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)_validationLayers.ValidationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(_validationLayers.ValidationLayers);
+            createInfo.EnabledLayerCount = (uint)ValidationLayers.ValidationLayers.Length;
+            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(ValidationLayers.ValidationLayers);
 
             // Needs to be created here to stay alive during CreateInstance due to & referencing
             DebugUtilsMessengerCreateInfoEXT debugCreateInfo = new();
-            _validationLayers?.PopulateDebugMessengerCreateInfo(ref debugCreateInfo);
+            ValidationLayers?.PopulateDebugMessengerCreateInfo(ref debugCreateInfo);
             createInfo.PNext = &debugCreateInfo;
         }
         else
@@ -80,7 +82,7 @@ public unsafe class VkInstance : IDisposable
         }
 
         Instance = instance;
-        _validationLayers?.SetupDebugMessenger();
+        ValidationLayers?.SetupDebugMessenger();
 
         Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
         Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
@@ -92,7 +94,7 @@ public unsafe class VkInstance : IDisposable
 
     private string[] GetRequiredExtensions()
     {
-        var glfwExtensions = _window.Window.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
+        var glfwExtensions = Window.Window.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
         var extensions = SilkMarshal.PtrToStringArray((nint)glfwExtensions, (int)glfwExtensionCount);
 
         if (EnableValidationLayers)
@@ -100,17 +102,18 @@ public unsafe class VkInstance : IDisposable
 
         return extensions;
     }
+    
 
     public void Run()
     {
-        _window.Run();
+        Window.Run();
     }
 
     public void Dispose()
     {
-        _validationLayers?.Dispose();
+        ValidationLayers?.Dispose();
         Vk.DestroyInstance(Instance, null);
         Vk.Dispose();
-        _window.Dispose();
+        Window.Dispose();
     }
 }
