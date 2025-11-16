@@ -112,6 +112,7 @@ public unsafe class VkInstance : IDisposable
     public void Dispose()
     {
         ValidationLayers?.Dispose();
+        _swapChain.Dispose();
         Device.Dispose();
         Vk.DestroyInstance(Instance, null);
         Vk.Dispose();
