@@ -11,17 +11,21 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public class VkSwapChain
+public class VkSwapChain : IDisposable
 {
+    private readonly VkInstance _instance;
     private KhrSwapchain? _khrSwapChain;
     private SwapchainKHR _swapChain;
     private Image[]? _swapChainImages;
     private Format _swapChainImageFormat;
     private Extent2D _swapChainExtent;
+    private ImageView[]? _swapChainImageViews;
 
     public VkSwapChain(VkInstance instance)
     {
+        _instance = instance;
         CreateSwapChain(instance);
+        CreateImageViews(instance);
     }
 
     private unsafe void CreateSwapChain(VkInstance instance)
@@ -144,5 +148,51 @@ public class VkSwapChain
             capabilities.MaxImageExtent.Height);
 
         return actualExtent;
+    }
+    
+    private unsafe void CreateImageViews(VkInstance instance)
+    {
+        _swapChainImageViews = new ImageView[_swapChainImages!.Length];
+
+        for (int i = 0; i < _swapChainImages.Length; i++)
+        {
+            ImageViewCreateInfo createInfo = new()
+            {
+                SType = StructureType.ImageViewCreateInfo,
+                Image = _swapChainImages[i],
+                ViewType = ImageViewType.Type2D,
+                Format = _swapChainImageFormat,
+                Components =
+                {
+                    R = ComponentSwizzle.Identity,
+                    G = ComponentSwizzle.Identity,
+                    B = ComponentSwizzle.Identity,
+                    A = ComponentSwizzle.Identity,
+                },
+                SubresourceRange =
+                {
+                    AspectMask = ImageAspectFlags.ColorBit,
+                    BaseMipLevel = 0,
+                    LevelCount = 1,
+                    BaseArrayLayer = 0,
+                    LayerCount = 1,
+                }
+
+            };
+
+            if (instance.Vk.CreateImageView(instance.Device.Device, in createInfo, null, out _swapChainImageViews[i]) != Result.Success)
+            {
+                throw new Exception("Failed to create image views!");
+            }
+        }
+    }
+
+    public unsafe void Dispose()
+    {
+        foreach (var imageView in _swapChainImageViews!)
+        {
+            _instance.Vk.DestroyImageView(_instance.Device.Device, imageView, null);
+        }
+        _khrSwapChain!.DestroySwapchain(_instance.Device.Device, _swapChain, null);
     }
 }

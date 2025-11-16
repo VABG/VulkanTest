@@ -17,8 +17,9 @@ public struct QueueFamilyIndices
     }
 }
 
-public unsafe class VkDevice
+public unsafe class VkDevice : IDisposable
 {
+    private readonly VkInstance _vkInstance;
     private readonly string[] _deviceExtensions = [KhrSwapchain.ExtensionName];
     
     public PhysicalDevice PhysicalDevice { get; private set; }
@@ -31,6 +32,7 @@ public unsafe class VkDevice
 
     public VkDevice(VkInstance vkInstance)
     {
+        _vkInstance = vkInstance;
         CreateSurface(vkInstance);
         PickPhysicalDevice(vkInstance);
         CreateLogicalDevice(PhysicalDevice, vkInstance);
@@ -236,5 +238,10 @@ public unsafe class VkDevice
         }
 
         return details;
+    }
+
+    public void Dispose()
+    {
+        KhrSurface!.DestroySurface(_vkInstance.Instance, Surface, null);
     }
 }
