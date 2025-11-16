@@ -3,7 +3,6 @@ using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
 
 namespace VulkanTest;
 
@@ -19,18 +18,21 @@ public unsafe class VkInstance : IDisposable
     public Instance Instance { get; private set; }
     public VkValidationLayers? ValidationLayers { get; private set; }
     public  VkWindow Window { get; }
-    private readonly VkDevice _device;
+    public readonly VkDevice Device;
+    private readonly VkSwapChain _swapChain;
 
 
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
         Window = new VkWindow(resolutionWidth, resolutionHeight);
         Vk = Vk.GetApi();
-        CreateInstanceAndDebugMessenger();
-        _device = new VkDevice(this);
+        CreateInstance();
+        ValidationLayers?.SetupDebugMessenger();
+        Device = new VkDevice(this);
+        _swapChain = new VkSwapChain(this);
     }
 
-    private void CreateInstanceAndDebugMessenger()
+    private void CreateInstance()
     {
         if (EnableValidationLayers)
         {
@@ -56,7 +58,6 @@ public unsafe class VkInstance : IDisposable
         };
 
         var extensions = GetRequiredExtensions();
-
         createInfo.EnabledExtensionCount = (uint)extensions.Length;
         createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions);
 
@@ -82,7 +83,6 @@ public unsafe class VkInstance : IDisposable
         }
 
         Instance = instance;
-        ValidationLayers?.SetupDebugMessenger();
 
         Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
         Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);

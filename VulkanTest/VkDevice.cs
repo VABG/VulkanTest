@@ -1,11 +1,12 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 
 namespace VulkanTest;
 
-internal struct QueueFamilyIndices
+public struct QueueFamilyIndices
 {
     public uint? GraphicsFamily { get; set; }
     public uint? PresentFamily { get; set; }
@@ -16,27 +17,30 @@ internal struct QueueFamilyIndices
     }
 }
 
-public class VkDevice
+public unsafe class VkDevice
 {
-    private PhysicalDevice _physicalDevice;
-    private Device _device;
+    private readonly string[] _deviceExtensions = [KhrSwapchain.ExtensionName];
+    
+    public PhysicalDevice PhysicalDevice { get; private set; }
+    public Device Device { get; private set; }
     private Queue _graphicsQueue;
     private Queue _presentQueue;
-    private KhrSurface? _khrSurface;
-    private SurfaceKHR _surface;
-
+    public KhrSurface? KhrSurface { get; private set; }
+    public SurfaceKHR Surface { get; private set; }
+    public QueueFamilyIndices QueueFamilyIndices { get; private set; }
 
     public VkDevice(VkInstance vkInstance)
     {
         CreateSurface(vkInstance);
         PickPhysicalDevice(vkInstance);
-        CreateLogicalDevice(_physicalDevice, vkInstance);
+        CreateLogicalDevice(PhysicalDevice, vkInstance);
     }
 
-    private unsafe void CreateLogicalDevice(PhysicalDevice physicalDevice, VkInstance vkInstance)
+    private void CreateLogicalDevice(PhysicalDevice physicalDevice, VkInstance vkInstance)
     {
-        var indices = FindQueueFamilies(physicalDevice, vkInstance);
-        var uniqueQueueFamilies = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
+        QueueFamilyIndices = FindQueueFamilies(physicalDevice, vkInstance);
+        var uniqueQueueFamilies = new[] { QueueFamilyIndices.GraphicsFamily!.Value, QueueFamilyIndices.PresentFamily!.Value };
+        // Both values can be the same
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
 
         using var mem = GlobalMemory.Allocate(uniqueQueueFamilies.Length * sizeof(DeviceQueueCreateInfo));
@@ -66,12 +70,13 @@ public class VkDevice
 
             PEnabledFeatures = &deviceFeatures,
 
-            EnabledExtensionCount = 0
+            EnabledExtensionCount = (uint)_deviceExtensions.Length,
+            PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(_deviceExtensions)
         };
 
         if (VkInstance.EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)vkInstance.ValidationLayers!.ValidationLayers.Length!;
+            createInfo.EnabledLayerCount = (uint)vkInstance.ValidationLayers!.ValidationLayers.Length;
             createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(vkInstance.ValidationLayers!.ValidationLayers);
         }
         else
@@ -79,13 +84,15 @@ public class VkDevice
             createInfo.EnabledLayerCount = 0;
         }
 
-        if (vkInstance.Vk.CreateDevice(physicalDevice, in createInfo, null, out _device) != Result.Success)
+        if (vkInstance.Vk.CreateDevice(physicalDevice, in createInfo, null, out var device) != Result.Success)
         {
             throw new Exception("failed to create logical device!");
         }
 
-        vkInstance.Vk.GetDeviceQueue(_device, indices.GraphicsFamily!.Value, 0, out _graphicsQueue);
-        vkInstance.Vk.GetDeviceQueue(_device, indices.PresentFamily!.Value, 0, out _presentQueue);
+        Device = device;
+
+        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.GraphicsFamily!.Value, 0, out _graphicsQueue);
+        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.PresentFamily!.Value, 0, out _presentQueue);
 
         if (VkInstance.EnableValidationLayers)
         {
@@ -93,14 +100,14 @@ public class VkDevice
         }
     }
     
-    private unsafe void CreateSurface(VkInstance vkInstance)
+    private void CreateSurface(VkInstance vkInstance)
     {
-        if (!vkInstance.Vk.TryGetInstanceExtension<KhrSurface>(vkInstance.Instance, out _khrSurface))
+        if (!vkInstance.Vk.TryGetInstanceExtension<KhrSurface>(vkInstance.Instance, out var khrSurface))
         {
             throw new NotSupportedException("KHR_surface extension not found.");
         }
-
-        _surface = vkInstance.Window.Window.VkSurface!.Create<AllocationCallbacks>(vkInstance.Instance.ToHandle(), null).ToSurface();
+        KhrSurface = khrSurface;
+        Surface = vkInstance.Window.Window.VkSurface!.Create<AllocationCallbacks>(vkInstance.Instance.ToHandle(), null).ToSurface();
     }
     
     private void PickPhysicalDevice(VkInstance vkInstance)
@@ -112,11 +119,11 @@ public class VkDevice
             if (!IsDeviceSuitable(device, vkInstance)) 
                 continue;
             
-            _physicalDevice = device;
+            PhysicalDevice = device;
             break;
         }
 
-        if (_physicalDevice.Handle == 0)
+        if (PhysicalDevice.Handle == 0)
         {
             throw new Exception("failed to find a suitable GPU!");
         }
@@ -125,11 +132,17 @@ public class VkDevice
     private bool IsDeviceSuitable(PhysicalDevice device, VkInstance vkInstance)
     {
         var indices = FindQueueFamilies(device, vkInstance);
+        if (!indices.IsComplete())
+            return false;
+        
+        if (!CheckDeviceExtensionsSupport(device, vkInstance))
+            return false;
 
-        return indices.IsComplete();
+        var swapChainSupport = QuerySwapChainSupport(device, vkInstance);
+        return swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
     }
 
-    private unsafe QueueFamilyIndices FindQueueFamilies(PhysicalDevice device, VkInstance vkInstance)
+    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device, VkInstance vkInstance)
     {
         var indices = new QueueFamilyIndices();
 
@@ -150,7 +163,7 @@ public class VkDevice
                 indices.GraphicsFamily = i;
             }
 
-            _khrSurface!.GetPhysicalDeviceSurfaceSupport(device, i, _surface, out var presentSupport);
+            KhrSurface!.GetPhysicalDeviceSurfaceSupport(device, i, Surface, out var presentSupport);
 
             if (presentSupport)
             {
@@ -166,5 +179,62 @@ public class VkDevice
         }
 
         return indices;
+    }
+    
+    private bool CheckDeviceExtensionsSupport(PhysicalDevice device, VkInstance instance)
+    {
+        uint extensionCount = 0;
+        instance.Vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, null);
+
+        var availableExtensions = new ExtensionProperties[extensionCount];
+        fixed (ExtensionProperties* availableExtensionsPtr = availableExtensions)
+        {
+            instance.Vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, availableExtensionsPtr);
+        }
+
+        var availableExtensionNames = availableExtensions.Select(extension => Marshal.PtrToStringAnsi((IntPtr)extension.ExtensionName)).ToHashSet();
+
+        return _deviceExtensions.All(availableExtensionNames.Contains);
+    }
+    
+    public SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physicalDevice, VkInstance instance)
+    {
+        var details = new SwapChainSupportDetails();
+        
+        KhrSurface!.GetPhysicalDeviceSurfaceCapabilities(physicalDevice, Surface, out details.Capabilities);
+
+        uint formatCount = 0;
+        KhrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, Surface, ref formatCount, null);
+
+        if (formatCount != 0)
+        {
+            details.Formats = new SurfaceFormatKHR[formatCount];
+            fixed (SurfaceFormatKHR* formatsPtr = details.Formats)
+            {
+                KhrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, Surface, ref formatCount, formatsPtr);
+            }
+        }
+        else
+        {
+            details.Formats = Array.Empty<SurfaceFormatKHR>();
+        }
+
+        uint presentModeCount = 0;
+        KhrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, Surface, ref presentModeCount, null);
+
+        if (presentModeCount != 0)
+        {
+            details.PresentModes = new PresentModeKHR[presentModeCount];
+            fixed (PresentModeKHR* formatsPtr = details.PresentModes)
+            {
+                KhrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, Surface, ref presentModeCount, formatsPtr);
+            }
+        }
+        else
+        {
+            details.PresentModes = Array.Empty<PresentModeKHR>();
+        }
+
+        return details;
     }
 }
