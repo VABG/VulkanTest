@@ -17,9 +17,9 @@ public class VkSwapChain : IDisposable
     private KhrSwapchain? _khrSwapChain;
     private SwapchainKHR _swapChain;
     private Image[]? _swapChainImages;
-    private Format _swapChainImageFormat;
-    private Extent2D _swapChainExtent;
-    private ImageView[]? _swapChainImageViews;
+    public Format SwapChainImageFormat { get; private set; }
+    public Extent2D SwapChainExtent { get; private set; }
+    public ImageView[]? SwapChainImageViews { get; private set; }
 
     public VkSwapChain(VkInstance instance)
     {
@@ -99,8 +99,8 @@ public class VkSwapChain : IDisposable
             _khrSwapChain.GetSwapchainImages(instance.Device.Device, _swapChain, ref imageCount, swapChainImagesPtr);
         }
 
-        _swapChainImageFormat = surfaceFormat.Format;
-        _swapChainExtent = extent;
+        SwapChainImageFormat = surfaceFormat.Format;
+        SwapChainExtent = extent;
     }
 
     private SurfaceFormatKHR ChooseSwapSurfaceFormat(IReadOnlyList<SurfaceFormatKHR> availableFormats)
@@ -152,7 +152,7 @@ public class VkSwapChain : IDisposable
     
     private unsafe void CreateImageViews(VkInstance instance)
     {
-        _swapChainImageViews = new ImageView[_swapChainImages!.Length];
+        SwapChainImageViews = new ImageView[_swapChainImages!.Length];
 
         for (int i = 0; i < _swapChainImages.Length; i++)
         {
@@ -161,7 +161,7 @@ public class VkSwapChain : IDisposable
                 SType = StructureType.ImageViewCreateInfo,
                 Image = _swapChainImages[i],
                 ViewType = ImageViewType.Type2D,
-                Format = _swapChainImageFormat,
+                Format = SwapChainImageFormat,
                 Components =
                 {
                     R = ComponentSwizzle.Identity,
@@ -180,7 +180,7 @@ public class VkSwapChain : IDisposable
 
             };
 
-            if (instance.Vk.CreateImageView(instance.Device.Device, in createInfo, null, out _swapChainImageViews[i]) != Result.Success)
+            if (instance.Vk.CreateImageView(instance.Device.Device, in createInfo, null, out SwapChainImageViews[i]) != Result.Success)
             {
                 throw new Exception("Failed to create image views!");
             }
@@ -189,7 +189,7 @@ public class VkSwapChain : IDisposable
 
     public unsafe void Dispose()
     {
-        foreach (var imageView in _swapChainImageViews!)
+        foreach (var imageView in SwapChainImageViews!)
         {
             _instance.Vk.DestroyImageView(_instance.Device.Device, imageView, null);
         }

@@ -19,8 +19,8 @@ public unsafe class VkInstance : IDisposable
     public VkValidationLayers? ValidationLayers { get; private set; }
     public  VkWindow Window { get; }
     public readonly VkDevice Device;
-    private readonly VkSwapChain _swapChain;
-
+    public readonly VkSwapChain SwapChain;
+    private readonly VkGraphicsPipeline _pipeline;
 
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
@@ -29,7 +29,8 @@ public unsafe class VkInstance : IDisposable
         CreateInstance();
         ValidationLayers?.SetupDebugMessenger();
         Device = new VkDevice(this);
-        _swapChain = new VkSwapChain(this);
+        SwapChain = new VkSwapChain(this);
+        _pipeline = new VkGraphicsPipeline(this);
     }
 
     private void CreateInstance()
@@ -111,8 +112,9 @@ public unsafe class VkInstance : IDisposable
 
     public void Dispose()
     {
+        _pipeline.Dispose();
+        SwapChain.Dispose();
         ValidationLayers?.Dispose();
-        _swapChain.Dispose();
         Device.Dispose();
         Vk.DestroyInstance(Instance, null);
         Vk.Dispose();

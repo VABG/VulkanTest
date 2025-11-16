@@ -13,4 +13,17 @@
       <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.22.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="Shaders\vert.spv">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Shaders\frag.spv">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+      <Exec Command="C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Shaders/shader.vert -o Shaders/vert.spv&#xA;C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Shaders/shader.frag -o Shaders/frag.spv" />
+    </Target>
+
 </Project>
