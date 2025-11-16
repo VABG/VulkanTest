@@ -1,6 +1,7 @@
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
+using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace VulkanTest;
 
@@ -14,9 +15,9 @@ public struct SwapChainSupportDetails
 public class VkSwapChain : IDisposable
 {
     private readonly VkInstance _instance;
-    private KhrSwapchain? _khrSwapChain;
-    private SwapchainKHR _swapChain;
-    private Image[]? _swapChainImages;
+    public KhrSwapchain? KhrSwapChain { get; private set; }
+    public SwapchainKHR SwapChain { get; private set; }
+    public Image[]? SwapChainImages { get; private set; }
     public Format SwapChainImageFormat { get; private set; }
     public Extent2D SwapChainExtent { get; private set; }
     public ImageView[]? SwapChainImageViews { get; private set; }
@@ -27,6 +28,12 @@ public class VkSwapChain : IDisposable
         CreateSwapChain(instance);
         CreateImageViews(instance);
     }
+
+    public void AcquireNextImage(ref uint imageIndex, Semaphore imageSemaphore)
+    { 
+        var result = KhrSwapChain!.AcquireNextImage(_instance.Device.Device, SwapChain, ulong.MaxValue, imageSemaphore, default, ref imageIndex);
+    }
+    
 
     private unsafe void CreateSwapChain(VkInstance instance)
     {
@@ -81,22 +88,27 @@ public class VkSwapChain : IDisposable
             OldSwapchain = default
         };
 
-        if (!instance.Vk.TryGetDeviceExtension(instance.Instance, instance.Device.Device, out _khrSwapChain))
+        if (!instance.Vk.TryGetDeviceExtension(instance.Instance, instance.Device.Device, out KhrSwapchain khrSwapChain))
         {
             throw new NotSupportedException("VK_KHR_swapchain extension not found.");
         }
 
-        if (_khrSwapChain!.CreateSwapchain(instance.Device.Device, in createInfo, null, out _swapChain) !=
+        KhrSwapChain = khrSwapChain;
+        
+
+        if (KhrSwapChain!.CreateSwapchain(instance.Device.Device, in createInfo, null, out var swapChain) !=
             Result.Success)
         {
             throw new Exception("failed to create swap chain!");
         }
 
-        _khrSwapChain.GetSwapchainImages(instance.Device.Device, _swapChain, ref imageCount, null);
-        _swapChainImages = new Image[imageCount];
-        fixed (Image* swapChainImagesPtr = _swapChainImages)
+        SwapChain = swapChain;
+
+        KhrSwapChain.GetSwapchainImages(instance.Device.Device, SwapChain, ref imageCount, null);
+        SwapChainImages = new Image[imageCount];
+        fixed (Image* swapChainImagesPtr = SwapChainImages)
         {
-            _khrSwapChain.GetSwapchainImages(instance.Device.Device, _swapChain, ref imageCount, swapChainImagesPtr);
+            KhrSwapChain.GetSwapchainImages(instance.Device.Device, SwapChain, ref imageCount, swapChainImagesPtr);
         }
 
         SwapChainImageFormat = surfaceFormat.Format;
@@ -152,14 +164,14 @@ public class VkSwapChain : IDisposable
     
     private unsafe void CreateImageViews(VkInstance instance)
     {
-        SwapChainImageViews = new ImageView[_swapChainImages!.Length];
+        SwapChainImageViews = new ImageView[SwapChainImages!.Length];
 
-        for (int i = 0; i < _swapChainImages.Length; i++)
+        for (int i = 0; i < SwapChainImages.Length; i++)
         {
             ImageViewCreateInfo createInfo = new()
             {
                 SType = StructureType.ImageViewCreateInfo,
-                Image = _swapChainImages[i],
+                Image = SwapChainImages[i],
                 ViewType = ImageViewType.Type2D,
                 Format = SwapChainImageFormat,
                 Components =
@@ -193,6 +205,6 @@ public class VkSwapChain : IDisposable
         {
             _instance.Vk.DestroyImageView(_instance.Device.Device, imageView, null);
         }
-        _khrSwapChain!.DestroySwapchain(_instance.Device.Device, _swapChain, null);
+        KhrSwapChain!.DestroySwapchain(_instance.Device.Device, SwapChain, null);
     }
 }

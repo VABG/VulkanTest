@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 
@@ -17,10 +18,12 @@ public unsafe class VkInstance : IDisposable
     public Vk Vk { get; }
     public Instance Instance { get; private set; }
     public VkValidationLayers? ValidationLayers { get; private set; }
-    public  VkWindow Window { get; }
+    public readonly VkWindow Window;
     public readonly VkDevice Device;
     public readonly VkSwapChain SwapChain;
-    private readonly VkGraphicsPipeline _pipeline;
+    public readonly VkGraphicsPipeline GraphicsPipeline;
+    public readonly VkCommands Commands;
+    private readonly FrameDrawer _frameDrawer;
 
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
@@ -29,8 +32,11 @@ public unsafe class VkInstance : IDisposable
         CreateInstance();
         ValidationLayers?.SetupDebugMessenger();
         Device = new VkDevice(this);
+        
         SwapChain = new VkSwapChain(this);
-        _pipeline = new VkGraphicsPipeline(this);
+        GraphicsPipeline = new VkGraphicsPipeline(this);
+        Commands = new VkCommands(this);
+        _frameDrawer = new FrameDrawer(this);
     }
 
     private void CreateInstance()
@@ -103,21 +109,35 @@ public unsafe class VkInstance : IDisposable
 
         return extensions;
     }
-    
 
     public void Run()
     {
+        Window.Window.Render += WindowOnRender;
         Window.Run();
+        Vk.DeviceWaitIdle(Device.Device);
     }
 
+    private void WindowOnRender(double obj)
+    {
+        _frameDrawer.DrawFrame(0, this);
+    }
+    
     public void Dispose()
     {
-        _pipeline.Dispose();
-        SwapChain.Dispose();
+
+        
         ValidationLayers?.Dispose();
         Device.Dispose();
         Vk.DestroyInstance(Instance, null);
         Vk.Dispose();
         Window.Dispose();
+    }
+
+    private void DisposeSwapChain()
+    {
+        _frameDrawer.Dispose();
+        Commands.Dispose();
+        GraphicsPipeline.Dispose();
+        SwapChain.Dispose(); 
     }
 }

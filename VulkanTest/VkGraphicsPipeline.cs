@@ -7,9 +7,9 @@ public unsafe class VkGraphicsPipeline : IDisposable
 {
     private readonly VkInstance _instance;
     private PipelineLayout _pipelineLayout;
-    private RenderPass _renderPass;
-    private Pipeline _graphicsPipeline;
-    private Framebuffer[]? _swapChainFramebuffers;
+    public RenderPass RenderPass { get; private set; }
+    public Pipeline Pipeline { get; private set; }
+    public Framebuffer[]? SwapChainFramebuffers { get; private set; }
     public VkGraphicsPipeline(VkInstance instance)
     {
         _instance = instance;
@@ -53,10 +53,12 @@ public unsafe class VkGraphicsPipeline : IDisposable
             PSubpasses = &subpass,
         };
 
-        if (instance.Vk.CreateRenderPass(instance.Device.Device, in renderPassInfo, null, out _renderPass) != Result.Success)
+        if (instance.Vk.CreateRenderPass(instance.Device.Device, in renderPassInfo, null, out var renderPass) != Result.Success)
         {
             throw new Exception("failed to create render pass!");
         }
+
+        RenderPass = renderPass;
     }
     
     
@@ -192,15 +194,17 @@ public unsafe class VkGraphicsPipeline : IDisposable
             PMultisampleState = &multisampling,
             PColorBlendState = &colorBlending,
             Layout = _pipelineLayout,
-            RenderPass = _renderPass,
+            RenderPass = RenderPass,
             Subpass = 0,
             BasePipelineHandle = default
         };
 
-        if (instance.Vk.CreateGraphicsPipelines(instance.Device.Device, default, 1, in pipelineInfo, null, out _graphicsPipeline) != Result.Success)
+        if (instance.Vk.CreateGraphicsPipelines(instance.Device.Device, default, 1, in pipelineInfo, null, out var pipeline) != Result.Success)
         {
             throw new Exception("failed to create graphics pipeline!");
         }
+
+        Pipeline = pipeline;
 
         instance.Vk.DestroyShaderModule(instance.Device.Device, fragShaderModule, null);
         instance.Vk.DestroyShaderModule(instance.Device.Device, vertShaderModule, null);
@@ -237,7 +241,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
         var imageViews = instance.SwapChain.SwapChainImageViews;
         var imageViewsLength = imageViews!.Length;
         var swapChainExtent = instance.SwapChain.SwapChainExtent;
-        _swapChainFramebuffers = new Framebuffer[imageViewsLength];
+        SwapChainFramebuffers = new Framebuffer[imageViewsLength];
 
         for (int i = 0; i < imageViewsLength; i++)
         {
@@ -246,7 +250,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
             FramebufferCreateInfo framebufferInfo = new()
             {
                 SType = StructureType.FramebufferCreateInfo,
-                RenderPass = _renderPass,
+                RenderPass = RenderPass,
                 AttachmentCount = 1,
                 PAttachments = &attachment,
                 Width = swapChainExtent.Width,
@@ -254,7 +258,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
                 Layers = 1,
             };
 
-            if (instance.Vk.CreateFramebuffer(instance.Device.Device, in framebufferInfo, null, out _swapChainFramebuffers[i]) != Result.Success)
+            if (instance.Vk.CreateFramebuffer(instance.Device.Device, in framebufferInfo, null, out SwapChainFramebuffers[i]) != Result.Success)
             {
                 throw new Exception("failed to create framebuffer!");
             }
@@ -263,11 +267,11 @@ public unsafe class VkGraphicsPipeline : IDisposable
 
     public void Dispose()
     {
-        foreach (var framebuffer in _swapChainFramebuffers!)
+        foreach (var framebuffer in SwapChainFramebuffers!)
             _instance.Vk.DestroyFramebuffer(_instance.Device.Device, framebuffer, null);
         
-        _instance.Vk.DestroyPipeline(_instance.Device.Device, _graphicsPipeline, null);
+        _instance.Vk.DestroyPipeline(_instance.Device.Device, Pipeline, null);
         _instance.Vk.DestroyPipelineLayout(_instance.Device.Device, _pipelineLayout, null);
-        _instance.Vk.DestroyRenderPass(_instance.Device.Device, _renderPass, null);
+        _instance.Vk.DestroyRenderPass(_instance.Device.Device, RenderPass, null);
     }
 }

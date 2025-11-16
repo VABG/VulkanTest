@@ -24,8 +24,8 @@ public unsafe class VkDevice : IDisposable
     
     public PhysicalDevice PhysicalDevice { get; private set; }
     public Device Device { get; private set; }
-    private Queue _graphicsQueue;
-    private Queue _presentQueue;
+    public Queue GraphicsQueue { get; private set; }
+    public Queue PresentQueue { get; private set; }
     public KhrSurface? KhrSurface { get; private set; }
     public SurfaceKHR Surface { get; private set; }
     public QueueFamilyIndices QueueFamilyIndices { get; private set; }
@@ -93,8 +93,10 @@ public unsafe class VkDevice : IDisposable
 
         Device = device;
 
-        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.GraphicsFamily!.Value, 0, out _graphicsQueue);
-        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.PresentFamily!.Value, 0, out _presentQueue);
+        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.GraphicsFamily!.Value, 0, out var graphicsQueue);
+        GraphicsQueue = graphicsQueue;
+        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.PresentFamily!.Value, 0, out var presentQueue);
+        PresentQueue = presentQueue;
 
         if (VkInstance.EnableValidationLayers)
         {
