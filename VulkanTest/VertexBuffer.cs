@@ -82,5 +82,6 @@ public unsafe class VertexBuffer : IDisposable
     public void Dispose()
     {
         _instance.Vk.DestroyBuffer(_instance.Device.Device, Buffer, null);
+        _instance.Vk.FreeMemory(_instance.Device.Device, _vertexBufferMemory, null);
     }
 }

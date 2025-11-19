@@ -139,21 +139,6 @@ public unsafe class VkInstance : IDisposable
         _frameDrawer.DrawFrame(0, this);
     }
     
-    public void Dispose()
-    {
-        DisposeSwapChain();
-        DisposeDeviceAndWindow();
-    }
-
-    private void DisposeDeviceAndWindow()
-    {
-        ValidationLayers?.Dispose();
-        Device.Dispose();
-        Vk.DestroyInstance(Instance, null);
-        Vk.Dispose();
-        Window.Dispose();
-    }
-    
     public void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = Window.Window.FramebufferSize;
@@ -168,7 +153,14 @@ public unsafe class VkInstance : IDisposable
         DisposeSwapChain();
         InitializeSwapChain();
     }
-
+    
+    public void Dispose()
+    {
+        _vertexBuffer.Dispose();
+        DisposeSwapChain();
+        DisposeDeviceAndWindow();
+    }
+    
     private void DisposeSwapChain()
     {
         _frameDrawer.Dispose();
@@ -176,4 +168,15 @@ public unsafe class VkInstance : IDisposable
         GraphicsPipeline.Dispose();
         SwapChain.Dispose(); 
     }
+
+    private void DisposeDeviceAndWindow()
+    {
+        ValidationLayers?.Dispose();
+        Device.Dispose();
+        Vk.DestroyInstance(Instance, null);
+        Vk.Dispose();
+        Window.Dispose();
+    }
+    
+
 }

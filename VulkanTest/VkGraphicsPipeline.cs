@@ -140,7 +140,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
         {
             SType = StructureType.PipelineMultisampleStateCreateInfo,
             SampleShadingEnable = false,
-            RasterizationSamples = SampleCountFlags.Count4Bit,
+            RasterizationSamples = SampleCountFlags.Count1Bit,
         };
 
         PipelineColorBlendAttachmentState colorBlendAttachment = new()
