@@ -91,13 +91,6 @@ public unsafe class VkGraphicsPipeline : IDisposable
             vertShaderStageInfo,
             fragShaderStageInfo
         };
-        
-        PipelineVertexInputStateCreateInfo vertexInputInfo = new()
-        {
-            SType = StructureType.PipelineVertexInputStateCreateInfo,
-            VertexBindingDescriptionCount = 0,
-            VertexAttributeDescriptionCount = 0,
-        };
 
         PipelineInputAssemblyStateCreateInfo inputAssembly = new()
         {
@@ -147,7 +140,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
         {
             SType = StructureType.PipelineMultisampleStateCreateInfo,
             SampleShadingEnable = false,
-            RasterizationSamples = SampleCountFlags.Count1Bit,
+            RasterizationSamples = SampleCountFlags.Count4Bit,
         };
 
         PipelineColorBlendAttachmentState colorBlendAttachment = new()
@@ -182,29 +175,49 @@ public unsafe class VkGraphicsPipeline : IDisposable
             throw new Exception("failed to create pipeline layout!");
         }
         
-        GraphicsPipelineCreateInfo pipelineInfo = new()
-        {
-            SType = StructureType.GraphicsPipelineCreateInfo,
-            StageCount = 2,
-            PStages = shaderStages,
-            PVertexInputState = &vertexInputInfo,
-            PInputAssemblyState = &inputAssembly,
-            PViewportState = &viewportState,
-            PRasterizationState = &rasterizer,
-            PMultisampleState = &multisampling,
-            PColorBlendState = &colorBlending,
-            Layout = _pipelineLayout,
-            RenderPass = RenderPass,
-            Subpass = 0,
-            BasePipelineHandle = default
-        };
+        var bindingDescription = Vertex.GetBindingDescription();
+        var attributeDescriptions = Vertex.GetAttributeDescriptions();
 
-        if (instance.Vk.CreateGraphicsPipelines(instance.Device.Device, default, 1, in pipelineInfo, null, out var pipeline) != Result.Success)
+        fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
         {
-            throw new Exception("failed to create graphics pipeline!");
+            PipelineVertexInputStateCreateInfo vertexInputInfo = new()
+            {
+                SType = StructureType.PipelineVertexInputStateCreateInfo,
+                VertexBindingDescriptionCount = 1,
+                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
+                PVertexBindingDescriptions = &bindingDescription,
+                PVertexAttributeDescriptions = attributeDescriptionsPtr,
+            };
+        
+        
+            GraphicsPipelineCreateInfo pipelineInfo = new()
+            {
+                SType = StructureType.GraphicsPipelineCreateInfo,
+                StageCount = 2,
+                PStages = shaderStages,
+                PVertexInputState = &vertexInputInfo,
+                PInputAssemblyState = &inputAssembly,
+                PViewportState = &viewportState,
+                PRasterizationState = &rasterizer,
+                PMultisampleState = &multisampling,
+                PColorBlendState = &colorBlending,
+                Layout = _pipelineLayout,
+                RenderPass = RenderPass,
+                Subpass = 0,
+                BasePipelineHandle = default
+            };
+
+            if (instance.Vk.CreateGraphicsPipelines(instance.Device.Device, default, 1, in pipelineInfo, null, out var pipeline) != Result.Success)
+            {
+                throw new Exception("failed to create graphics pipeline!");
+            }
+            
+            Pipeline = pipeline;
         }
 
-        Pipeline = pipeline;
+      
+
+
 
         instance.Vk.DestroyShaderModule(instance.Device.Device, fragShaderModule, null);
         instance.Vk.DestroyShaderModule(instance.Device.Device, vertShaderModule, null);

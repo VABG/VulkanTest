@@ -29,9 +29,9 @@ public class VkSwapChain : IDisposable
         CreateImageViews(instance);
     }
 
-    public void AcquireNextImage(ref uint imageIndex, Semaphore imageSemaphore)
+    public Result AcquireNextImage(ref uint imageIndex, Semaphore imageSemaphore)
     { 
-        var result = KhrSwapChain!.AcquireNextImage(_instance.Device.Device, SwapChain, ulong.MaxValue, imageSemaphore, default, ref imageIndex);
+        return KhrSwapChain!.AcquireNextImage(_instance.Device.Device, SwapChain, ulong.MaxValue, imageSemaphore, default, ref imageIndex);
     }
     
 

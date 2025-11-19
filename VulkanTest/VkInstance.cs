@@ -20,11 +20,12 @@ public unsafe class VkInstance : IDisposable
     public VkValidationLayers? ValidationLayers { get; private set; }
     public readonly VkWindow Window;
     public readonly VkDevice Device;
-    public readonly VkSwapChain SwapChain;
-    public readonly VkGraphicsPipeline GraphicsPipeline;
-    public readonly VkCommands Commands;
-    private readonly FrameDrawer _frameDrawer;
-
+    public VkSwapChain SwapChain { get; private set; }
+    public VkGraphicsPipeline GraphicsPipeline { get; private set; }
+    public VkCommands Commands { get; private set; }
+    private FrameDrawer _frameDrawer;
+    private VertexBuffer _vertexBuffer;
+    
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
         Window = new VkWindow(resolutionWidth, resolutionHeight);
@@ -33,12 +34,28 @@ public unsafe class VkInstance : IDisposable
         ValidationLayers?.SetupDebugMessenger();
         Device = new VkDevice(this);
         
+        InitializeSwapChain();
+    }
+
+    private void InitializeSwapChain()
+    {
         SwapChain = new VkSwapChain(this);
         GraphicsPipeline = new VkGraphicsPipeline(this);
         Commands = new VkCommands(this);
+        _vertexBuffer = new VertexBuffer(this);
+        Commands.CreateCommandBuffers(this, _vertexBuffer.Buffer);
         _frameDrawer = new FrameDrawer(this);
     }
 
+    private void ResetSwapChain()
+    {
+        SwapChain = new VkSwapChain(this);
+        GraphicsPipeline = new VkGraphicsPipeline(this);
+        Commands = new VkCommands(this);
+        Commands.CreateCommandBuffers(this, _vertexBuffer.Buffer);
+        _frameDrawer = new FrameDrawer(this);
+    }
+    
     private void CreateInstance()
     {
         if (EnableValidationLayers)
@@ -124,13 +141,32 @@ public unsafe class VkInstance : IDisposable
     
     public void Dispose()
     {
+        DisposeSwapChain();
+        DisposeDeviceAndWindow();
+    }
 
-        
+    private void DisposeDeviceAndWindow()
+    {
         ValidationLayers?.Dispose();
         Device.Dispose();
         Vk.DestroyInstance(Instance, null);
         Vk.Dispose();
         Window.Dispose();
+    }
+    
+    public void RecreateSwapChain()
+    {
+        Vector2D<int> framebufferSize = Window.Window.FramebufferSize;
+
+        while (framebufferSize.X == 0 || framebufferSize.Y == 0)
+        {
+            framebufferSize = Window.Window.FramebufferSize;
+            Window.Window.DoEvents();
+        }
+
+        Vk.DeviceWaitIdle(Device.Device);
+        DisposeSwapChain();
+        InitializeSwapChain();
     }
 
     private void DisposeSwapChain()

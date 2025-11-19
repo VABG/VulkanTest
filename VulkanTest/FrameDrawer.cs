@@ -1,3 +1,4 @@
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
@@ -12,7 +13,7 @@ public unsafe class FrameDrawer : IDisposable
     private Fence[]? _imagesInFlight;
     private int _currentFrame = 0;
     const int MAX_FRAMES_IN_FLIGHT = 2;
-
+    
     public FrameDrawer(VkInstance instance)
     {
         _instance = instance;
@@ -59,11 +60,21 @@ public unsafe class FrameDrawer : IDisposable
         instance.Vk.WaitForFences(instance.Device.Device, 1, in _inFlightFences![_currentFrame], true, ulong.MaxValue);
 
         uint imageIndex = 0;
-        instance.SwapChain.AcquireNextImage(ref imageIndex, _imageAvailableSemaphores![_currentFrame]);
+        var result = instance.SwapChain.AcquireNextImage(ref imageIndex, _imageAvailableSemaphores![_currentFrame]);
 
         if (_imagesInFlight![imageIndex].Handle != default)
         {
             instance.Vk.WaitForFences(instance.Device.Device, 1, in _imagesInFlight[imageIndex], true, ulong.MaxValue);
+        }
+        
+        if (result == Result.ErrorOutOfDateKhr)
+        {
+            _instance.RecreateSwapChain();
+            return;
+        }
+        else if (result != Result.Success && result != Result.SuboptimalKhr)
+        {
+            throw new Exception("failed to acquire swap chain image!");
         }
 
         _imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];

@@ -1,4 +1,5 @@
 using Silk.NET.Vulkan;
+using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace VulkanTest;
 
@@ -12,7 +13,6 @@ public unsafe class VkCommands : IDisposable
     {
         _instance = instance;
         CreateCommandPool(instance);
-        CreateCommandBuffers(instance);
     }
     
     private void CreateCommandPool(VkInstance instance)
@@ -31,7 +31,7 @@ public unsafe class VkCommands : IDisposable
         }
     }
     
-     private void CreateCommandBuffers(VkInstance instance)
+     public  void CreateCommandBuffers(VkInstance instance, Buffer vertexBuffer)
      {
          var swapChainFramebuffersLength = instance.GraphicsPipeline.SwapChainFramebuffers!.Length;
         
@@ -89,6 +89,16 @@ public unsafe class VkCommands : IDisposable
 
             instance.Vk.CmdBindPipeline(CommandBuffers[i], PipelineBindPoint.Graphics, instance.GraphicsPipeline.Pipeline);
 
+            
+            var vertexBuffers = new Buffer[] { vertexBuffer };
+            var offsets = new ulong[] { 0 };
+
+            fixed (ulong* offsetsPtr = offsets)
+            fixed (Buffer* vertexBuffersPtr = vertexBuffers)
+            {
+                _instance.Vk.CmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
+            }
+            
             instance.Vk.CmdDraw(CommandBuffers[i], 3, 1, 0, 0);
 
             instance.Vk.CmdEndRenderPass(CommandBuffers[i]);
