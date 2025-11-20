@@ -244,7 +244,7 @@ public unsafe class VkDevice : IDisposable
 
     public void Dispose()
     {
-        KhrSurface!.DestroySurface(_vkInstance.Instance, Surface, null);
         _vkInstance.Vk.DestroyDevice(Device, null);
+        KhrSurface!.DestroySurface(_vkInstance.Instance, Surface, null);
     }
 }

@@ -131,7 +131,6 @@ public unsafe class VkInstance : IDisposable
     {
         Window.Window.Render += WindowOnRender;
         Window.Run();
-        Vk.DeviceWaitIdle(Device.Device);
     }
 
     private void WindowOnRender(double obj)
@@ -151,7 +150,7 @@ public unsafe class VkInstance : IDisposable
 
         Vk.DeviceWaitIdle(Device.Device);
         DisposeSwapChain();
-        InitializeSwapChain();
+        ResetSwapChain();
     }
     
     public void Dispose()
@@ -177,6 +176,4 @@ public unsafe class VkInstance : IDisposable
         Vk.Dispose();
         Window.Dispose();
     }
-    
-
 }

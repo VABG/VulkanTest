@@ -13,11 +13,18 @@ public unsafe class FrameDrawer : IDisposable
     private Fence[]? _imagesInFlight;
     private int _currentFrame = 0;
     const int MAX_FRAMES_IN_FLIGHT = 2;
+    private bool _frameBufferResized = false;
     
     public FrameDrawer(VkInstance instance)
     {
         _instance = instance;
+        _instance.Window.Window.Resize += WindowOnResize;
         CreateSyncObjects(instance);
+    }
+
+    private void WindowOnResize(Vector2D<int> obj)
+    {
+        _frameBufferResized = true;
     }
 
     private void CreateSyncObjects(VkInstance instance)
@@ -25,7 +32,7 @@ public unsafe class FrameDrawer : IDisposable
         _imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-
+        
         var imageLength = instance.SwapChain.SwapChainImageViews!.Length;
         _imagesInFlight = new Fence[imageLength];
 
@@ -128,8 +135,18 @@ public unsafe class FrameDrawer : IDisposable
             PImageIndices = &imageIndex
         };
 
-        instance.SwapChain.KhrSwapChain!.QueuePresent(instance.Device.PresentQueue, in presentInfo);
+        result = instance.SwapChain.KhrSwapChain!.QueuePresent(instance.Device.PresentQueue, in presentInfo);
 
+        if (result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || _frameBufferResized)
+        {
+            _frameBufferResized = false;
+            _instance.RecreateSwapChain();
+        }
+        else if (result != Result.Success)
+        {
+            throw new Exception("failed to present swap chain image!");
+        }
+        
         _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 

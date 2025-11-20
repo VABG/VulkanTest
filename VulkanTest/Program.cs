@@ -23,6 +23,7 @@ public class Program
     private void MainLoop()
     {
         _instance?.Run();
+        _instance!.Vk.DeviceWaitIdle(_instance.Device.Device);
     }
 
     private void CleanUp()
