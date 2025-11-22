@@ -93,7 +93,6 @@ public unsafe class VkCommands : IDisposable
                 }
             };
 
-
             fixed (ClearValue* clearValuesPtr = clearValues)
             {
                 renderPassInfo.ClearValueCount = (uint)clearValues.Length;
@@ -105,7 +104,6 @@ public unsafe class VkCommands : IDisposable
             _instance.Vk.CmdBindPipeline(CommandBuffers[i],
                 PipelineBindPoint.Graphics,
                 _instance.GraphicsPipeline.Pipeline);
-
 
             var vertexBuffers = new[] { _instance.VertexBuffer.VertexBuffer };
             var offsets = new ulong[] { 0 };
@@ -123,8 +121,8 @@ public unsafe class VkCommands : IDisposable
             _instance.Vk.CmdBindIndexBuffer(CommandBuffers![i],
                 _instance.VertexBuffer.IndexBuffer,
                 0,
-                IndexType.Uint16);
-            
+                IndexType.Uint32);
+
             _instance.Vk.CmdBindDescriptorSets(CommandBuffers[i],
                 PipelineBindPoint.Graphics,
                 _instance.GraphicsPipeline.PipelineLayout,

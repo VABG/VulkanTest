@@ -180,13 +180,13 @@ public class VkSwapChain : IDisposable
             Image = image,
             ViewType = ImageViewType.Type2D,
             Format = format,
-            //Components =
-            //    {
-            //        R = ComponentSwizzle.Identity,
-            //        G = ComponentSwizzle.Identity,
-            //        B = ComponentSwizzle.Identity,
-            //        A = ComponentSwizzle.Identity,
-            //    },
+            Components =
+            {
+                R = ComponentSwizzle.Identity,
+                G = ComponentSwizzle.Identity,
+                B = ComponentSwizzle.Identity,
+                A = ComponentSwizzle.Identity,
+            },
             SubresourceRange =
             {
                 AspectMask = ImageAspectFlags.ColorBit,

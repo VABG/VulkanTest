@@ -13,7 +13,7 @@ public class VkImageView : IDisposable
     {
         _instance = instance;
         Texture = new VkTexture(instance);
-        TextureImageView = _instance.ImageUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb,  ImageAspectFlags.ColorBit);
+        TextureImageView = _instance.ImageUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb,  ImageAspectFlags.ColorBit, Texture.MipLevels);
         CreateTextureSampler();
     }
     
@@ -36,6 +36,9 @@ public class VkImageView : IDisposable
             CompareEnable = false,
             CompareOp = CompareOp.Always,
             MipmapMode = SamplerMipmapMode.Linear,
+            MinLod = 0,
+            MaxLod = Texture.MipLevels,
+            MipLodBias = 0,
         };
 
         fixed (Sampler* textureSamplerPtr = &TextureSampler)

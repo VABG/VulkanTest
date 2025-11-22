@@ -159,7 +159,7 @@ public unsafe class VkInstance : IDisposable
         CommandBufferUtil = new CommandBufferUtil(this);
 
         ImageView = new VkImageView(this);
-        VertexBuffer = new VkVertexBuffer(this);
+        VertexBuffer = new VkVertexBuffer(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
         UniformBuffer = new VkUniformBuffer(this);
         DescriptorPool = new VkDescriptorPool(this);
         Commands.CreateCommandBuffers();

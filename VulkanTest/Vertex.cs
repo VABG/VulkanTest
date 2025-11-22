@@ -5,7 +5,7 @@ using Silk.NET.Vulkan;
 
 namespace VulkanTest;
 
-struct Vertex
+public struct Vertex : IEquatable<Vertex>
 {
     public Vector3D<float> Pos;
     public Vector3D<float> Color;
@@ -51,5 +51,20 @@ struct Vertex
         };
 
         return attributeDescriptions;
+    }
+
+    public bool Equals(Vertex other)
+    {
+        return Pos.Equals(other.Pos) && Color.Equals(other.Color) && TexCoord.Equals(other.TexCoord);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Vertex other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Pos, Color, TexCoord);
     }
 }

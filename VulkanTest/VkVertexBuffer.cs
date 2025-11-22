@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
@@ -8,7 +7,8 @@ namespace VulkanTest;
 public unsafe class VkVertexBuffer : IDisposable
 {
     private readonly VkInstance _instance;
- 
+    private readonly Model _model;
+
     //TODO: Generalize buffer (at least data and creation)
     public Buffer VertexBuffer;
     private DeviceMemory _vertexBufferMemory;
@@ -16,53 +16,21 @@ public unsafe class VkVertexBuffer : IDisposable
     public Buffer IndexBuffer;
     private DeviceMemory _indexBufferMemory;
 
-    public VkVertexBuffer(VkInstance instance)
+    public VkVertexBuffer(VkInstance instance, Model model)
     {
         _instance = instance;
+        _model = model;
         CreateVertexBuffer();
         CreateIndexBuffer();
     }
 
-    public uint GetIndicesCount() => (uint)_indices.Length;
-
-    private Vertex[] _vertices =
-    [
-        new() { Pos = new Vector3D<float>(-0.5f,-0.5f, 0.0f), 
-            Color = new Vector3D<float>(1.0f, 0.0f, 0.0f), 
-            TexCoord = new Vector2D<float>(1.0f, 0.0f) },
-        new() { Pos = new Vector3D<float>(0.5f,-0.5f, 0.0f), 
-            Color = new Vector3D<float>(0.0f, 1.0f, 0.0f), 
-            TexCoord = new Vector2D<float>(0.0f, 0.0f) },
-        new() { Pos = new Vector3D<float>(0.5f,0.5f, 0.0f), 
-            Color = new Vector3D<float>(0.0f, 0.0f, 1.0f), 
-            TexCoord = new Vector2D<float>(0.0f, 1.0f) },
-        new() { Pos = new Vector3D<float>(-0.5f,0.5f, 0.0f), 
-            Color = new Vector3D<float>(1.0f, 1.0f, 1.0f), 
-            TexCoord = new Vector2D<float>(1.0f, 1.0f) },
-        
-        new() { Pos = new Vector3D<float>(-0.5f,-0.5f, -0.5f), 
-            Color = new Vector3D<float>(1.0f, 0.0f, 0.0f), 
-            TexCoord = new Vector2D<float>(1.0f, 0.0f) },
-        new() { Pos = new Vector3D<float>(0.5f,-0.5f, -0.5f), 
-            Color = new Vector3D<float>(0.0f, 1.0f, 0.0f), 
-            TexCoord = new Vector2D<float>(0.0f, 0.0f) },
-        new() { Pos = new Vector3D<float>(0.5f,0.5f, -0.5f), 
-            Color = new Vector3D<float>(0.0f, 0.0f, 1.0f), 
-            TexCoord = new Vector2D<float>(0.0f, 1.0f) },
-        new() { Pos = new Vector3D<float>(-0.5f,0.5f, -0.5f), 
-            Color = new Vector3D<float>(1.0f, 1.0f, 1.0f), 
-            TexCoord = new Vector2D<float>(1.0f, 1.0f) },
-    ];
-    
-    private ushort[] _indices =
-    [
-        0, 2, 1, 3, 2, 0,
-        4, 6, 5, 7, 6, 4,
-    ];
+    public uint GetIndicesCount() => (uint)_model.Indices.Length;
 
     private void CreateVertexBuffer()
     {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex>() * _vertices.Length);
+        var vertices = _model.Vertices;
+
+        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex>() * vertices.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
@@ -72,9 +40,10 @@ public unsafe class VkVertexBuffer : IDisposable
             ref stagingBuffer,
             ref stagingBufferMemory);
 
+        
         void* data;
         _instance.Vk.MapMemory(_instance.Device.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        _vertices.AsSpan().CopyTo(new Span<Vertex>(data, _vertices.Length));
+        vertices.AsSpan().CopyTo(new Span<Vertex>(data, vertices.Length));
         _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
 
         _instance.CommandBufferUtil.CreateBuffer(bufferSize,
@@ -88,11 +57,11 @@ public unsafe class VkVertexBuffer : IDisposable
         _instance.Vk.DestroyBuffer(_instance.Device.Device, stagingBuffer, null);
         _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);
     }
-    
 
     private void CreateIndexBuffer()
     {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<ushort>() * _indices.Length);
+        var indices = _model.Indices;
+        ulong bufferSize = (ulong)(Unsafe.SizeOf<uint>() * indices.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
@@ -104,7 +73,7 @@ public unsafe class VkVertexBuffer : IDisposable
 
         void* data;
         _instance.Vk.MapMemory(_instance.Device.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        _indices.AsSpan().CopyTo(new Span<ushort>(data, _indices.Length));
+        indices.AsSpan().CopyTo(new Span<uint>(data, indices.Length));
         _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
 
         _instance.CommandBufferUtil.CreateBuffer(bufferSize,

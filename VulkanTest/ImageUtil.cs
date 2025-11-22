@@ -11,7 +11,7 @@ public class ImageUtil
         _instance = instance;
     }
     
-    public unsafe ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags)
+    public unsafe ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags, uint mipLevels)
     {
         ImageViewCreateInfo createInfo = new()
         {
@@ -30,7 +30,7 @@ public class ImageUtil
             {
                 AspectMask = aspectFlags,
                 BaseMipLevel = 0,
-                LevelCount = 1,
+                LevelCount = mipLevels,
                 BaseArrayLayer = 0,
                 LayerCount = 1,
             }
@@ -46,7 +46,7 @@ public class ImageUtil
         return imageView;
     }
     
-    public unsafe void CreateImage(uint width, uint height, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
+    public unsafe void CreateImage(uint width, uint height, uint mipLevels, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
     {
         ImageCreateInfo imageInfo = new()
         {
@@ -58,7 +58,7 @@ public class ImageUtil
                 Height = height,
                 Depth = 1,
             },
-            MipLevels = 1,
+            MipLevels = mipLevels,
             ArrayLayers = 1,
             Format = format,
             Tiling = tiling,

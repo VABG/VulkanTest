@@ -21,13 +21,14 @@ public class VkDepthImage : IDisposable
         var swapChainExtent = _instance.SwapChain.SwapChainExtent;
         _instance.ImageUtil.CreateImage(swapChainExtent.Width,
             swapChainExtent.Height,
+            1,
             depthFormat,
             ImageTiling.Optimal,
             ImageUsageFlags.DepthStencilAttachmentBit,
             MemoryPropertyFlags.DeviceLocalBit,
             ref _depthImage,
             ref _depthImageMemory);
-        DepthImageView = _instance.ImageUtil.CreateImageView(_depthImage, depthFormat, ImageAspectFlags.DepthBit);
+        DepthImageView = _instance.ImageUtil.CreateImageView(_depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
     
 
