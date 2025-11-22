@@ -6,6 +6,7 @@ namespace VulkanTest;
 public unsafe class VkTexture : IDisposable
 {
     private readonly VkInstance _instance;
+    
     private DeviceMemory _textureImageMemory;
     public Image Image;
     public uint MipLevels { get; private set; }

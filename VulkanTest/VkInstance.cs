@@ -189,6 +189,7 @@ public unsafe class VkInstance : IDisposable
     {
         DisposeSwapChain();
         ImageView.Dispose();
+        VertexBuffer.Dispose();
         DisposeDeviceAndWindow();
     }
     
