@@ -27,10 +27,18 @@ public unsafe class VkVertexBuffer : IDisposable
 
     private Vertex[] _vertices =
     [
-        new() { Pos = new Vector2D<float>(-0.5f,-0.5f), Color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
-        new() { Pos = new Vector2D<float>(0.5f,-0.5f), Color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },
-        new() { Pos = new Vector2D<float>(0.5f,0.5f), Color = new Vector3D<float>(0.0f, 0.0f, 1.0f) },
-        new() { Pos = new Vector2D<float>(-0.5f,0.5f), Color = new Vector3D<float>(1.0f, 1.0f, 1.0f) },
+        new() { Pos = new Vector2D<float>(-0.5f,-0.5f), 
+            Color = new Vector3D<float>(1.0f, 0.0f, 0.0f), 
+            TexCoord = new Vector2D<float>(1.0f, 0.0f) },
+        new() { Pos = new Vector2D<float>(0.5f,-0.5f), 
+            Color = new Vector3D<float>(0.0f, 1.0f, 0.0f), 
+            TexCoord = new Vector2D<float>(0.0f, 0.0f) },
+        new() { Pos = new Vector2D<float>(0.5f,0.5f), 
+            Color = new Vector3D<float>(0.0f, 0.0f, 1.0f), 
+            TexCoord = new Vector2D<float>(0.0f, 1.0f) },
+        new() { Pos = new Vector2D<float>(-0.5f,0.5f), 
+            Color = new Vector3D<float>(1.0f, 1.0f, 1.0f), 
+            TexCoord = new Vector2D<float>(1.0f, 1.0f) },
     ];
     
     private ushort[] _indices =
@@ -44,7 +52,7 @@ public unsafe class VkVertexBuffer : IDisposable
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        _instance.BufferUtil.CreateBuffer(bufferSize,
+        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             ref stagingBuffer,
@@ -55,13 +63,13 @@ public unsafe class VkVertexBuffer : IDisposable
         _vertices.AsSpan().CopyTo(new Span<Vertex>(data, _vertices.Length));
         _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
 
-        _instance.BufferUtil.CreateBuffer(bufferSize,
+        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit,
             MemoryPropertyFlags.DeviceLocalBit,
             ref VertexBuffer,
             ref _vertexBufferMemory);
 
-        _instance.BufferUtil.CopyBuffer(stagingBuffer, VertexBuffer, bufferSize);
+        _instance.CommandBufferUtil.CopyBuffer(stagingBuffer, VertexBuffer, bufferSize);
 
         _instance.Vk.DestroyBuffer(_instance.Device.Device, stagingBuffer, null);
         _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);
@@ -74,7 +82,7 @@ public unsafe class VkVertexBuffer : IDisposable
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        _instance.BufferUtil.CreateBuffer(bufferSize,
+        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             ref stagingBuffer,
@@ -85,13 +93,13 @@ public unsafe class VkVertexBuffer : IDisposable
         _indices.AsSpan().CopyTo(new Span<ushort>(data, _indices.Length));
         _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
 
-        _instance.BufferUtil.CreateBuffer(bufferSize,
+        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit,
             MemoryPropertyFlags.DeviceLocalBit,
             ref IndexBuffer,
             ref _indexBufferMemory);
 
-        _instance.BufferUtil.CopyBuffer(stagingBuffer, IndexBuffer, bufferSize);
+        _instance.CommandBufferUtil.CopyBuffer(stagingBuffer, IndexBuffer, bufferSize);
 
         _instance.Vk.DestroyBuffer(_instance.Device.Device, stagingBuffer, null);
         _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);

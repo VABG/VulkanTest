@@ -23,16 +23,28 @@ public class VkDescriptorSetLayout : IDisposable
             PImmutableSamplers = null,
             StageFlags = ShaderStageFlags.VertexBit,
         };
-
-        DescriptorSetLayoutCreateInfo layoutInfo = new()
+        
+        DescriptorSetLayoutBinding samplerLayoutBinding = new()
         {
-            SType = StructureType.DescriptorSetLayoutCreateInfo,
-            BindingCount = 1,
-            PBindings = &uboLayoutBinding,
+            Binding = 1,
+            DescriptorCount = 1,
+            DescriptorType = DescriptorType.CombinedImageSampler,
+            PImmutableSamplers = null,
+            StageFlags = ShaderStageFlags.FragmentBit,
         };
+        
+        var bindings = new[] { uboLayoutBinding, samplerLayoutBinding };
 
+        fixed (DescriptorSetLayoutBinding* bindingsPtr = bindings)
         fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &DescriptorSetLayout)
         {
+            DescriptorSetLayoutCreateInfo layoutInfo = new()
+            {
+                SType = StructureType.DescriptorSetLayoutCreateInfo,
+                BindingCount = (uint)bindings.Length,
+                PBindings = bindingsPtr,
+            };
+            
             if (_instance.Vk.CreateDescriptorSetLayout(_instance.Device.Device,
                     in layoutInfo,
                     null,

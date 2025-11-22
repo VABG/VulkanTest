@@ -60,10 +60,12 @@ public unsafe class VkDevice : IDisposable
                 PQueuePriorities = &queuePriority
             };
         }
-
-        // No features currently
-        PhysicalDeviceFeatures deviceFeatures = new();
-
+        
+        PhysicalDeviceFeatures deviceFeatures = new()
+        {
+            SamplerAnisotropy = true,
+        };
+        
         var createInfo = new DeviceCreateInfo
         {
             SType = StructureType.DeviceCreateInfo,

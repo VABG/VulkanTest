@@ -19,29 +19,37 @@ public unsafe class VkDescriptorPool : IDisposable
     private void CreateDescriptorPool()
     {
         var swapChainImagesLength = _instance.SwapChain.SwapChainImages!.Length;
-        
-        DescriptorPoolSize poolSize = new()
+
+        var poolSizes = new DescriptorPoolSize[]
         {
-            Type = DescriptorType.UniformBuffer,
-            DescriptorCount = (uint)swapChainImagesLength,
+            new()
+            {
+                Type = DescriptorType.UniformBuffer,
+                DescriptorCount = (uint)swapChainImagesLength,
+            },
+            new()
+            {
+                Type = DescriptorType.CombinedImageSampler,
+                DescriptorCount = (uint)swapChainImagesLength,
+            }
         };
 
-
-        DescriptorPoolCreateInfo poolInfo = new()
-        {
-            SType = StructureType.DescriptorPoolCreateInfo,
-            PoolSizeCount = 1,
-            PPoolSizes = &poolSize,
-            MaxSets = (uint)swapChainImagesLength,
-        };
+        fixed (DescriptorPoolSize* poolSizesPtr = poolSizes)
 
         fixed (DescriptorPool* descriptorPoolPtr = &_descriptorPool)
         {
+            DescriptorPoolCreateInfo poolInfo = new()
+            {
+                SType = StructureType.DescriptorPoolCreateInfo,
+                PoolSizeCount = 1,
+                PPoolSizes = poolSizesPtr,
+                MaxSets = (uint)swapChainImagesLength,
+            };
+            
             if (_instance.Vk.CreateDescriptorPool(_instance.Device.Device, in poolInfo, null, descriptorPoolPtr) != Result.Success)
             {
                 throw new Exception("failed to create descriptor pool!");
             }
-
         }
     }
     
@@ -85,28 +93,51 @@ public unsafe class VkDescriptorPool : IDisposable
                 Range = (ulong)Unsafe.SizeOf<UniformBufferObject>(),
 
             };
-
-            WriteDescriptorSet descriptorWrite = new()
+            
+            DescriptorImageInfo imageInfo = new()
             {
-                SType = StructureType.WriteDescriptorSet,
-                DstSet = DescriptorSets[i],
-                DstBinding = 0,
-                DstArrayElement = 0,
-                DescriptorType = DescriptorType.UniformBuffer,
-                DescriptorCount = 1,
-                PBufferInfo = &bufferInfo,
+                ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
+                ImageView = _instance.ImageView.TextureImageView,
+                Sampler = _instance.ImageView.TextureSampler,
             };
 
-            _instance.Vk.UpdateDescriptorSets(_instance.Device.Device,
-                1,
-                in descriptorWrite,
-                0,
-                null);
+            var descriptorWrites = new WriteDescriptorSet[]
+            {
+                new()
+                {
+                    SType = StructureType.WriteDescriptorSet,
+                    DstSet = DescriptorSets[i],
+                    DstBinding = 0,
+                    DstArrayElement = 0,
+                    DescriptorType = DescriptorType.UniformBuffer,
+                    DescriptorCount = 1,
+                    PBufferInfo = &bufferInfo,
+                },
+                new()
+                {
+                    SType = StructureType.WriteDescriptorSet,
+                    DstSet = DescriptorSets[i],
+                    DstBinding = 1,
+                    DstArrayElement = 0,
+                    DescriptorType = DescriptorType.CombinedImageSampler,
+                    DescriptorCount = 1,
+                    PImageInfo = &imageInfo,
+                }
+            };
+
+            fixed (WriteDescriptorSet* descriptorWritesPtr = descriptorWrites)
+            {
+                _instance.Vk.UpdateDescriptorSets(_instance.Device.Device,
+                    (uint)descriptorWrites.Length,
+                    descriptorWritesPtr,
+                    0,
+                    null);
+            }
         }
     }
 
     public void Dispose()
     {
-        
+        _instance.Vk.DestroyDescriptorPool(_instance.Device.Device, _descriptorPool, null);
     }
 }

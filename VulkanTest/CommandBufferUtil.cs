@@ -3,11 +3,11 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace VulkanTest;
 
-public unsafe class BufferUtil
+public unsafe class CommandBufferUtil
 {
     private readonly VkInstance _instance;
 
-    public BufferUtil(VkInstance instance)
+    public CommandBufferUtil(VkInstance instance)
     {
         _instance = instance;
     }
@@ -37,7 +37,7 @@ public unsafe class BufferUtil
         {
             SType = StructureType.MemoryAllocateInfo,
             AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits, properties),
+            MemoryTypeIndex = _instance.MemoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
         };
 
         fixed (DeviceMemory* bufferMemoryPtr = &bufferMemory)
@@ -53,6 +53,17 @@ public unsafe class BufferUtil
     }
 
     public void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
+    {
+        CommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+        BufferCopy copyRegion = new() { Size = size, };
+
+        _instance.Vk.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, in copyRegion);
+
+        EndSingleTimeCommands(commandBuffer);
+    }
+    
+    public CommandBuffer BeginSingleTimeCommands()
     {
         CommandBufferAllocateInfo allocateInfo = new()
         {
@@ -72,13 +83,11 @@ public unsafe class BufferUtil
 
         _instance.Vk.BeginCommandBuffer(commandBuffer, in beginInfo);
 
-        BufferCopy copyRegion = new()
-        {
-            Size = size,
-        };
+        return commandBuffer;
+    }
 
-        _instance.Vk.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, in copyRegion);
-
+    public void EndSingleTimeCommands(CommandBuffer commandBuffer)
+    {
         _instance.Vk.EndCommandBuffer(commandBuffer);
 
         SubmitInfo submitInfo = new()
@@ -91,18 +100,6 @@ public unsafe class BufferUtil
         _instance.Vk.QueueSubmit(_instance.Device.GraphicsQueue, 1, in submitInfo, default);
         _instance.Vk.QueueWaitIdle(_instance.Device.GraphicsQueue);
 
-        _instance.Vk.FreeCommandBuffers(_instance.Device.Device, _instance.Commands.CommandPool, 1, in commandBuffer);
-    }
-
-
-    private uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
-    {
-        _instance.Vk.GetPhysicalDeviceMemoryProperties(_instance.Device.PhysicalDevice, out var memProperties);
-
-        for (int i = 0; i < memProperties.MemoryTypeCount; i++)
-            if ((typeFilter & (1 << i)) != 0 && (memProperties.MemoryTypes[i].PropertyFlags & properties) == properties)
-                return (uint)i;
-
-        throw new Exception("failed to find suitable memory type!");
+        _instance.Vk.FreeCommandBuffers(_instance.Device.Device,_instance.Commands.CommandPool, 1, in commandBuffer);
     }
 }

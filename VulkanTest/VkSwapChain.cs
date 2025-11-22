@@ -168,35 +168,43 @@ public class VkSwapChain : IDisposable
 
         for (int i = 0; i < SwapChainImages.Length; i++)
         {
-            ImageViewCreateInfo createInfo = new()
-            {
-                SType = StructureType.ImageViewCreateInfo,
-                Image = SwapChainImages[i],
-                ViewType = ImageViewType.Type2D,
-                Format = SwapChainImageFormat,
-                Components =
-                {
-                    R = ComponentSwizzle.Identity,
-                    G = ComponentSwizzle.Identity,
-                    B = ComponentSwizzle.Identity,
-                    A = ComponentSwizzle.Identity,
-                },
-                SubresourceRange =
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    BaseMipLevel = 0,
-                    LevelCount = 1,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1,
-                }
-
-            };
-
-            if (instance.Vk.CreateImageView(instance.Device.Device, in createInfo, null, out SwapChainImageViews[i]) != Result.Success)
-            {
-                throw new Exception("Failed to create image views!");
-            }
+            SwapChainImageViews[i] = CreateImageView(SwapChainImages[i], SwapChainImageFormat);
         }
+    }
+    
+    private unsafe ImageView CreateImageView(Image image, Format format)
+    {
+        ImageViewCreateInfo createInfo = new()
+        {
+            SType = StructureType.ImageViewCreateInfo,
+            Image = image,
+            ViewType = ImageViewType.Type2D,
+            Format = format,
+            //Components =
+            //    {
+            //        R = ComponentSwizzle.Identity,
+            //        G = ComponentSwizzle.Identity,
+            //        B = ComponentSwizzle.Identity,
+            //        A = ComponentSwizzle.Identity,
+            //    },
+            SubresourceRange =
+            {
+                AspectMask = ImageAspectFlags.ColorBit,
+                BaseMipLevel = 0,
+                LevelCount = 1,
+                BaseArrayLayer = 0,
+                LayerCount = 1,
+            }
+
+        };
+
+
+        if (_instance.Vk.CreateImageView(_instance.Device.Device, in createInfo, null, out ImageView imageView) != Result.Success)
+        {
+            throw new Exception("failed to create image views!");
+        }
+
+        return imageView;
     }
 
     public unsafe void Dispose()

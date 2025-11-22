@@ -4,7 +4,6 @@ using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
-using Buffer = System.Buffer;
 
 namespace VulkanTest;
 
@@ -21,12 +20,15 @@ public unsafe class VkInstance : IDisposable
     public VkValidationLayers? ValidationLayers { get; private set; }
     public readonly VkWindow Window;
     public readonly VkDevice Device;
+    public readonly MemoryUtil MemoryUtil;
+    public readonly ImageViewUtil ImageViewUtil;
     public VkSwapChain SwapChain { get; private set; }
     public VkRenderPass RenderPass { get; private set; }
     public VkGraphicsPipeline GraphicsPipeline { get; private set; }
     public VkCommands Commands { get; private set; }
     private VkFrameDrawer _vkFrameDrawer;
-    public BufferUtil BufferUtil { get; private set; }
+    public VkImageView ImageView { get; private set; }
+    public CommandBufferUtil CommandBufferUtil { get; private set; }
     public VkVertexBuffer VertexBuffer { get; private set; }
     public VkUniformBuffer UniformBuffer { get; private set; } 
     public VkDescriptorPool DescriptorPool { get; private set; }
@@ -38,6 +40,9 @@ public unsafe class VkInstance : IDisposable
         CreateInstance();
         ValidationLayers?.SetupDebugMessenger();
         Device = new VkDevice(this);
+        
+        MemoryUtil = new MemoryUtil(this);
+        ImageViewUtil = new ImageViewUtil(this);
         
         InitializeSwapChain();
     }
@@ -144,7 +149,9 @@ public unsafe class VkInstance : IDisposable
         RenderPass = new VkRenderPass(this);
         GraphicsPipeline = new VkGraphicsPipeline(this);
         Commands = new VkCommands(this);
-        BufferUtil = new BufferUtil(this);
+        CommandBufferUtil = new CommandBufferUtil(this);
+        
+        ImageView = new VkImageView(this);
         VertexBuffer = new VkVertexBuffer(this);
         UniformBuffer = new VkUniformBuffer(this);
         DescriptorPool = new VkDescriptorPool(this);
@@ -164,8 +171,8 @@ public unsafe class VkInstance : IDisposable
     
     public void Dispose()
     {
-        
         DisposeSwapChain();
+        ImageView.Dispose();
         DisposeDeviceAndWindow();
     }
     
@@ -178,6 +185,7 @@ public unsafe class VkInstance : IDisposable
         RenderPass.Dispose();
         GraphicsPipeline.Dispose();
         SwapChain.Dispose(); 
+        DescriptorPool.Dispose();
     }
 
     private void DisposeDeviceAndWindow()

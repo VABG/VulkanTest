@@ -26,7 +26,7 @@ public class VkUniformBuffer : IDisposable
         _uniformBuffersMemory = new DeviceMemory[swapChainImagesLength];
 
         for (int i = 0; i < swapChainImagesLength; i++)
-            _instance.BufferUtil.CreateBuffer(bufferSize,
+            _instance.CommandBufferUtil.CreateBuffer(bufferSize,
                 BufferUsageFlags.UniformBufferBit,
                 MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                 ref UniformBuffers[i],
