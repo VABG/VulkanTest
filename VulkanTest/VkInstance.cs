@@ -172,8 +172,15 @@ public unsafe class VkInstance : IDisposable
     {
         DisposeSwapChain();
         SwapChain = new VkSwapChain(this);
+        DepthImage = new VkDepthImage(this);
+        ColorImage = new VkColorImage(this);
+        RenderPass = new VkRenderPass(this);
         GraphicsPipeline = new VkGraphicsPipeline(this);
         Commands = new VkCommands(this);
+        ImageView = new VkImageView(this);
+        UniformBuffer = new VkUniformBuffer(this);
+        DescriptorPool = new VkDescriptorPool(this);
+        
         Commands.CreateCommandBuffers();
         _vkFrameDrawer = new VkFrameDrawer(this);
     }
@@ -188,8 +195,8 @@ public unsafe class VkInstance : IDisposable
     private void DisposeSwapChain()
     {
         DepthImage.Dispose();
+        ColorImage.Dispose();
         UniformBuffer.Dispose();
-        VertexBuffer.Dispose();
         _vkFrameDrawer.Dispose();
         Commands.Dispose();
         RenderPass.Dispose();
