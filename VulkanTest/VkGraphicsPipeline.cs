@@ -99,6 +99,16 @@ public unsafe class VkGraphicsPipeline : IDisposable
             SampleShadingEnable = false,
             RasterizationSamples = SampleCountFlags.Count1Bit,
         };
+        
+        PipelineDepthStencilStateCreateInfo depthStencil = new()
+        {
+            SType = StructureType.PipelineDepthStencilStateCreateInfo,
+            DepthTestEnable = true,
+            DepthWriteEnable = true,
+            DepthCompareOp = CompareOp.Less,
+            DepthBoundsTestEnable = false,
+            StencilTestEnable = false,
+        };
 
         PipelineColorBlendAttachmentState colorBlendAttachment = new()
         {
@@ -163,6 +173,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
                     PViewportState = &viewportState,
                     PRasterizationState = &rasterizer,
                     PMultisampleState = &multisampling,
+                    PDepthStencilState = &depthStencil,
                     PColorBlendState = &colorBlending,
                     Layout = PipelineLayout,
                     RenderPass = _instance.RenderPass.RenderPass,
@@ -225,23 +236,25 @@ public unsafe class VkGraphicsPipeline : IDisposable
 
         for (int i = 0; i < imageViewsLength; i++)
         {
-            var attachment = imageViews[i];
-
-            FramebufferCreateInfo framebufferInfo = new()
+            var attachments = new[] { imageViews[i], _instance.DepthImage.DepthImageView };
+            fixed (ImageView* attachmentsPtr = attachments)
             {
-                SType = StructureType.FramebufferCreateInfo,
-                RenderPass = _instance.RenderPass.RenderPass,
-                AttachmentCount = 1,
-                PAttachments = &attachment,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
-                Layers = 1,
-            };
+                FramebufferCreateInfo framebufferInfo = new()
+                {
+                    SType = StructureType.FramebufferCreateInfo,
+                    RenderPass = _instance.RenderPass.RenderPass,
+                    AttachmentCount = (uint)attachments.Length,
+                    PAttachments = attachmentsPtr,
+                    Width = swapChainExtent.Width,
+                    Height = swapChainExtent.Height,
+                    Layers = 1,
+                };
 
-            if (instance.Vk.CreateFramebuffer(instance.Device.Device, in framebufferInfo, null,
-                    out SwapChainFramebuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to create framebuffer!");
+                if (instance.Vk.CreateFramebuffer(instance.Device.Device, in framebufferInfo, null,
+                        out SwapChainFramebuffers[i]) != Result.Success)
+                {
+                    throw new Exception("failed to create framebuffer!");
+                }
             }
         }
     }

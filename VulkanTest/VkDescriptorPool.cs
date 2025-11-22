@@ -35,13 +35,12 @@ public unsafe class VkDescriptorPool : IDisposable
         };
 
         fixed (DescriptorPoolSize* poolSizesPtr = poolSizes)
-
         fixed (DescriptorPool* descriptorPoolPtr = &_descriptorPool)
         {
             DescriptorPoolCreateInfo poolInfo = new()
             {
                 SType = StructureType.DescriptorPoolCreateInfo,
-                PoolSizeCount = 1,
+                PoolSizeCount = (uint)poolSizes.Length,
                 PPoolSizes = poolSizesPtr,
                 MaxSets = (uint)swapChainImagesLength,
             };

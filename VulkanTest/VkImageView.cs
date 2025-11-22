@@ -7,13 +7,13 @@ public class VkImageView : IDisposable
     private readonly VkInstance _instance;
     public ImageView TextureImageView { get; private set; }
     public Sampler TextureSampler;
-    public VkTexture Texture; 
+    public readonly VkTexture Texture; 
 
     public VkImageView(VkInstance instance)
     {
         _instance = instance;
         Texture = new VkTexture(instance);
-        TextureImageView = _instance.ImageViewUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb);
+        TextureImageView = _instance.ImageUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb,  ImageAspectFlags.ColorBit);
         CreateTextureSampler();
     }
     

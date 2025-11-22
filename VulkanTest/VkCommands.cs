@@ -81,17 +81,26 @@ public unsafe class VkCommands : IDisposable
                 }
             };
 
-            ClearValue clearColor = new()
+            var clearValues = new ClearValue[]
             {
-                Color = new() { Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },
+                new()
+                {
+                    Color = new ClearColorValue { Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },
+                },
+                new()
+                {
+                    DepthStencil = new ClearDepthStencilValue { Depth = 1, Stencil = 0 }
+                }
             };
 
-            renderPassInfo.ClearValueCount = 1;
-            renderPassInfo.PClearValues = &clearColor;
 
-            _instance.Vk.CmdBeginRenderPass(CommandBuffers[i],
-                &renderPassInfo,
-                SubpassContents.Inline);
+            fixed (ClearValue* clearValuesPtr = clearValues)
+            {
+                renderPassInfo.ClearValueCount = (uint)clearValues.Length;
+                renderPassInfo.PClearValues = clearValuesPtr;
+
+                _instance.Vk.CmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, SubpassContents.Inline);
+            }
 
             _instance.Vk.CmdBindPipeline(CommandBuffers[i],
                 PipelineBindPoint.Graphics,

@@ -21,13 +21,17 @@ public unsafe class VkInstance : IDisposable
     public readonly VkWindow Window;
     public readonly VkDevice Device;
     public readonly MemoryUtil MemoryUtil;
-    public readonly ImageViewUtil ImageViewUtil;
+    public readonly ImageUtil ImageUtil;
+    public readonly DepthFormatUtil DepthFormatUtil;
     public VkSwapChain SwapChain { get; private set; }
     public VkRenderPass RenderPass { get; private set; }
     public VkGraphicsPipeline GraphicsPipeline { get; private set; }
     public VkCommands Commands { get; private set; }
     private VkFrameDrawer _vkFrameDrawer;
+    
+    public VkDepthImage DepthImage { get; private set; }
     public VkImageView ImageView { get; private set; }
+    
     public CommandBufferUtil CommandBufferUtil { get; private set; }
     public VkVertexBuffer VertexBuffer { get; private set; }
     public VkUniformBuffer UniformBuffer { get; private set; } 
@@ -42,7 +46,8 @@ public unsafe class VkInstance : IDisposable
         Device = new VkDevice(this);
         
         MemoryUtil = new MemoryUtil(this);
-        ImageViewUtil = new ImageViewUtil(this);
+        ImageUtil = new ImageUtil(this);
+        DepthFormatUtil = new DepthFormatUtil(this);
         
         InitializeSwapChain();
     }
@@ -146,11 +151,13 @@ public unsafe class VkInstance : IDisposable
     private void InitializeSwapChain()
     {
         SwapChain = new VkSwapChain(this);
+        
+        DepthImage = new VkDepthImage(this);
         RenderPass = new VkRenderPass(this);
         GraphicsPipeline = new VkGraphicsPipeline(this);
         Commands = new VkCommands(this);
         CommandBufferUtil = new CommandBufferUtil(this);
-        
+
         ImageView = new VkImageView(this);
         VertexBuffer = new VkVertexBuffer(this);
         UniformBuffer = new VkUniformBuffer(this);
@@ -178,6 +185,7 @@ public unsafe class VkInstance : IDisposable
     
     private void DisposeSwapChain()
     {
+        DepthImage.Dispose();
         UniformBuffer.Dispose();
         VertexBuffer.Dispose();
         _vkFrameDrawer.Dispose();

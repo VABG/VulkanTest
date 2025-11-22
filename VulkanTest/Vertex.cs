@@ -7,7 +7,7 @@ namespace VulkanTest;
 
 struct Vertex
 {
-    public Vector2D<float> Pos;
+    public Vector3D<float> Pos;
     public Vector3D<float> Color;
     public Vector2D<float> TexCoord;
 
@@ -31,7 +31,7 @@ struct Vertex
             {
                 Binding = 0,
                 Location = 0,
-                Format = Format.R32G32Sfloat,
+                Format = Format.R32G32B32Sfloat,
                 Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(Pos)),
             },
             new VertexInputAttributeDescription()

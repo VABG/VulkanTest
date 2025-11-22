@@ -30,7 +30,14 @@ public unsafe class VkTexture : IDisposable
         img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
         _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
 
-        CreateImage((uint)img.Width, (uint)img.Height, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref Image, ref _textureImageMemory);
+        _instance.ImageUtil.CreateImage((uint)img.Width,
+            (uint)img.Height,
+            Format.R8G8B8A8Srgb,
+            ImageTiling.Optimal,
+            ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit,
+            MemoryPropertyFlags.DeviceLocalBit,
+            ref Image,
+            ref _textureImageMemory);
 
         TransitionImageLayout(Image, Format.R8G8B8A8Srgb, ImageLayout.Undefined, ImageLayout.TransferDstOptimal);
         CopyBufferToImage(stagingBuffer, Image, (uint)img.Width, (uint)img.Height);
@@ -40,55 +47,7 @@ public unsafe class VkTexture : IDisposable
         _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);
     }
     
-     private void CreateImage(uint width, uint height, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
-    {
-        ImageCreateInfo imageInfo = new()
-        {
-            SType = StructureType.ImageCreateInfo,
-            ImageType = ImageType.Type2D,
-            Extent =
-            {
-                Width = width,
-                Height = height,
-                Depth = 1,
-            },
-            MipLevels = 1,
-            ArrayLayers = 1,
-            Format = format,
-            Tiling = tiling,
-            InitialLayout = ImageLayout.Undefined,
-            Usage = usage,
-            Samples = SampleCountFlags.Count1Bit,
-            SharingMode = SharingMode.Exclusive,
-        };
-
-        fixed (Image* imagePtr = &image)
-        {
-            if (_instance.Vk.CreateImage(_instance.Device.Device, in imageInfo, null, imagePtr) != Result.Success)
-            {
-                throw new Exception("failed to create image!");
-            }
-        }
-
-        _instance.Vk.GetImageMemoryRequirements(_instance.Device.Device, image, out MemoryRequirements memRequirements);
-
-        MemoryAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = _instance.MemoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
-        };
-
-        fixed (DeviceMemory* imageMemoryPtr = &imageMemory)
-        {
-            if (_instance.Vk.AllocateMemory(_instance.Device.Device, in allocInfo, null, imageMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate image memory!");
-            }
-        }
-
-        _instance.Vk.BindImageMemory(_instance.Device.Device, image, imageMemory, 0);
-    }
+     
 
     private void TransitionImageLayout(Image image, Format format, ImageLayout oldLayout, ImageLayout newLayout)
     {
@@ -148,7 +107,6 @@ public unsafe class VkTexture : IDisposable
             in barrier);
 
         _instance.CommandBufferUtil.EndSingleTimeCommands(commandBuffer);
-
     }
 
     private void CopyBufferToImage(Buffer buffer, Image image, uint width, uint height)

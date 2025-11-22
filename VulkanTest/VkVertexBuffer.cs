@@ -27,23 +27,37 @@ public unsafe class VkVertexBuffer : IDisposable
 
     private Vertex[] _vertices =
     [
-        new() { Pos = new Vector2D<float>(-0.5f,-0.5f), 
+        new() { Pos = new Vector3D<float>(-0.5f,-0.5f, 0.0f), 
             Color = new Vector3D<float>(1.0f, 0.0f, 0.0f), 
             TexCoord = new Vector2D<float>(1.0f, 0.0f) },
-        new() { Pos = new Vector2D<float>(0.5f,-0.5f), 
+        new() { Pos = new Vector3D<float>(0.5f,-0.5f, 0.0f), 
             Color = new Vector3D<float>(0.0f, 1.0f, 0.0f), 
             TexCoord = new Vector2D<float>(0.0f, 0.0f) },
-        new() { Pos = new Vector2D<float>(0.5f,0.5f), 
+        new() { Pos = new Vector3D<float>(0.5f,0.5f, 0.0f), 
             Color = new Vector3D<float>(0.0f, 0.0f, 1.0f), 
             TexCoord = new Vector2D<float>(0.0f, 1.0f) },
-        new() { Pos = new Vector2D<float>(-0.5f,0.5f), 
+        new() { Pos = new Vector3D<float>(-0.5f,0.5f, 0.0f), 
+            Color = new Vector3D<float>(1.0f, 1.0f, 1.0f), 
+            TexCoord = new Vector2D<float>(1.0f, 1.0f) },
+        
+        new() { Pos = new Vector3D<float>(-0.5f,-0.5f, -0.5f), 
+            Color = new Vector3D<float>(1.0f, 0.0f, 0.0f), 
+            TexCoord = new Vector2D<float>(1.0f, 0.0f) },
+        new() { Pos = new Vector3D<float>(0.5f,-0.5f, -0.5f), 
+            Color = new Vector3D<float>(0.0f, 1.0f, 0.0f), 
+            TexCoord = new Vector2D<float>(0.0f, 0.0f) },
+        new() { Pos = new Vector3D<float>(0.5f,0.5f, -0.5f), 
+            Color = new Vector3D<float>(0.0f, 0.0f, 1.0f), 
+            TexCoord = new Vector2D<float>(0.0f, 1.0f) },
+        new() { Pos = new Vector3D<float>(-0.5f,0.5f, -0.5f), 
             Color = new Vector3D<float>(1.0f, 1.0f, 1.0f), 
             TexCoord = new Vector2D<float>(1.0f, 1.0f) },
     ];
     
     private ushort[] _indices =
     [
-        0, 2, 1, 3, 2, 0
+        0, 2, 1, 3, 2, 0,
+        4, 6, 5, 7, 6, 4,
     ];
 
     private void CreateVertexBuffer()
