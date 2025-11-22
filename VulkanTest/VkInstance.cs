@@ -30,6 +30,7 @@ public unsafe class VkInstance : IDisposable
     private VkFrameDrawer _vkFrameDrawer;
     
     public VkDepthImage DepthImage { get; private set; }
+    public VkColorImage ColorImage { get; private set; }
     public VkImageView ImageView { get; private set; }
     
     public CommandBufferUtil CommandBufferUtil { get; private set; }
@@ -153,6 +154,7 @@ public unsafe class VkInstance : IDisposable
         SwapChain = new VkSwapChain(this);
         
         DepthImage = new VkDepthImage(this);
+        ColorImage = new VkColorImage(this);
         RenderPass = new VkRenderPass(this);
         GraphicsPipeline = new VkGraphicsPipeline(this);
         Commands = new VkCommands(this);

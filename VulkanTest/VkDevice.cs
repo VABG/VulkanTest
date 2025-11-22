@@ -29,6 +29,7 @@ public unsafe class VkDevice : IDisposable
     public KhrSurface? KhrSurface { get; private set; }
     public SurfaceKHR Surface { get; private set; }
     public QueueFamilyIndices QueueFamilyIndices { get; private set; }
+    public SampleCountFlags MaxMsaaSamples { get; private set; }
 
     public VkDevice(VkInstance vkInstance)
     {
@@ -36,6 +37,7 @@ public unsafe class VkDevice : IDisposable
         CreateSurface(vkInstance);
         PickPhysicalDevice(vkInstance);
         CreateLogicalDevice(PhysicalDevice, vkInstance);
+        MaxMsaaSamples = GetMaxUsableSampleCount();
     }
 
     private void CreateLogicalDevice(PhysicalDevice physicalDevice, VkInstance vkInstance)
@@ -243,6 +245,25 @@ public unsafe class VkDevice : IDisposable
 
         return details;
     }
+    
+    private SampleCountFlags GetMaxUsableSampleCount()
+    {
+        _vkInstance.Vk.GetPhysicalDeviceProperties(PhysicalDevice, out var physicalDeviceProperties);
+
+        var counts = physicalDeviceProperties.Limits.FramebufferColorSampleCounts & physicalDeviceProperties.Limits.FramebufferDepthSampleCounts;
+
+        return counts switch
+        {
+            var c when (c & SampleCountFlags.Count64Bit) != 0 => SampleCountFlags.Count64Bit,
+            var c when (c & SampleCountFlags.Count32Bit) != 0 => SampleCountFlags.Count32Bit,
+            var c when (c & SampleCountFlags.Count16Bit) != 0 => SampleCountFlags.Count16Bit,
+            var c when (c & SampleCountFlags.Count8Bit) != 0 => SampleCountFlags.Count8Bit,
+            var c when (c & SampleCountFlags.Count4Bit) != 0 => SampleCountFlags.Count4Bit,
+            var c when (c & SampleCountFlags.Count2Bit) != 0 => SampleCountFlags.Count2Bit,
+            _ => SampleCountFlags.Count1Bit
+        };
+    }
+
 
     public void Dispose()
     {

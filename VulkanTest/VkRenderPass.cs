@@ -18,7 +18,7 @@ public class VkRenderPass : IDisposable
         AttachmentDescription colorAttachment = new()
         {
             Format = instance.SwapChain.SwapChainImageFormat,
-            Samples = SampleCountFlags.Count1Bit,
+            Samples = _instance.Device.MaxMsaaSamples,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
             StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -29,7 +29,7 @@ public class VkRenderPass : IDisposable
         AttachmentDescription depthAttachment = new()
         {
             Format = _instance.DepthFormatUtil.FindDepthFormat(),
-            Samples = SampleCountFlags.Count1Bit,
+            Samples = _instance.Device.MaxMsaaSamples,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.DontCare,
             StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -37,7 +37,7 @@ public class VkRenderPass : IDisposable
             InitialLayout = ImageLayout.Undefined,
             FinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
         };
-
+        
         AttachmentReference colorAttachmentRef = new()
         {
             Attachment = 0,
@@ -49,6 +49,12 @@ public class VkRenderPass : IDisposable
             Attachment = 1,
             Layout = ImageLayout.DepthStencilAttachmentOptimal,
         };
+        
+        AttachmentReference colorAttachmentResolveRef = new()
+        {
+            Attachment = 2,
+            Layout = ImageLayout.ColorAttachmentOptimal,
+        };
 
         SubpassDescription subpass = new()
         {
@@ -56,6 +62,7 @@ public class VkRenderPass : IDisposable
             ColorAttachmentCount = 1,
             PColorAttachments = &colorAttachmentRef,
             PDepthStencilAttachment = &depthAttachmentRef,
+            PResolveAttachments =  &colorAttachmentResolveRef,
         };
         
         SubpassDependency dependency = new()
@@ -68,7 +75,19 @@ public class VkRenderPass : IDisposable
             DstAccessMask = AccessFlags.ColorAttachmentWriteBit | AccessFlags.DepthStencilAttachmentWriteBit
         };
         
-        var attachments = new[] { colorAttachment, depthAttachment };
+        AttachmentDescription colorAttachmentResolve = new()
+        {
+            Format = instance.SwapChain.SwapChainImageFormat,
+            Samples = SampleCountFlags.Count1Bit,
+            LoadOp = AttachmentLoadOp.DontCare,
+            StoreOp = AttachmentStoreOp.Store,
+            StencilLoadOp = AttachmentLoadOp.DontCare,
+            StencilStoreOp = AttachmentStoreOp.DontCare,
+            InitialLayout = ImageLayout.Undefined,
+            FinalLayout = ImageLayout.PresentSrcKhr,
+        };
+        
+        var attachments = new[] { colorAttachment, depthAttachment, colorAttachmentResolve };
         
         fixed (AttachmentDescription* attachmentsPtr = attachments)
         {

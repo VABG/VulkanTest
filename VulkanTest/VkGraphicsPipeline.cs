@@ -97,7 +97,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
         {
             SType = StructureType.PipelineMultisampleStateCreateInfo,
             SampleShadingEnable = false,
-            RasterizationSamples = SampleCountFlags.Count1Bit,
+            RasterizationSamples = _instance.Device.MaxMsaaSamples,
         };
         
         PipelineDepthStencilStateCreateInfo depthStencil = new()
@@ -236,7 +236,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
 
         for (int i = 0; i < imageViewsLength; i++)
         {
-            var attachments = new[] { imageViews[i], _instance.DepthImage.DepthImageView };
+            var attachments = new[] {  _instance.ColorImage.ColorImageView, _instance.DepthImage.DepthImageView , imageViews[i],};
             fixed (ImageView* attachmentsPtr = attachments)
             {
                 FramebufferCreateInfo framebufferInfo = new()

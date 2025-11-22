@@ -36,6 +36,7 @@ public unsafe class VkTexture : IDisposable
             (uint)img.Width,
             (uint)img.Height,
             MipLevels,
+            SampleCountFlags.Count1Bit,
             Format.R8G8B8A8Srgb,
             ImageTiling.Optimal,
             ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit,

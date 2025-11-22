@@ -22,6 +22,7 @@ public class VkDepthImage : IDisposable
         _instance.ImageUtil.CreateImage(swapChainExtent.Width,
             swapChainExtent.Height,
             1,
+            _instance.Device.MaxMsaaSamples,
             depthFormat,
             ImageTiling.Optimal,
             ImageUsageFlags.DepthStencilAttachmentBit,

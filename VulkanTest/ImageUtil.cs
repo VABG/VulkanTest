@@ -46,7 +46,7 @@ public class ImageUtil
         return imageView;
     }
     
-    public unsafe void CreateImage(uint width, uint height, uint mipLevels, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
+    public unsafe void CreateImage(uint width, uint height, uint mipLevels, SampleCountFlags numSamples,  Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
     {
         ImageCreateInfo imageInfo = new()
         {
@@ -64,7 +64,7 @@ public class ImageUtil
             Tiling = tiling,
             InitialLayout = ImageLayout.Undefined,
             Usage = usage,
-            Samples = SampleCountFlags.Count1Bit,
+            Samples = numSamples,
             SharingMode = SharingMode.Exclusive,
         };
 
