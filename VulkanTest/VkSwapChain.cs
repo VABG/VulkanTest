@@ -42,7 +42,7 @@ public class VkSwapChain : IDisposable
         var presentMode = ChoosePresentMode(swapChainSupport.PresentModes);
         var extent = ChooseSwapExtent(swapChainSupport.Capabilities, instance.Window.Window);
 
-        var imageCount = swapChainSupport.Capabilities.MinImageCount + 1;
+        var imageCount = swapChainSupport.Capabilities.MinImageCount;
         if (swapChainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapChainSupport.Capabilities.MaxImageCount)
         {
             imageCount = swapChainSupport.Capabilities.MaxImageCount;
