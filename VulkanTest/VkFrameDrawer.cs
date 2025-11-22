@@ -4,7 +4,7 @@ using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace VulkanTest;
 
-public unsafe class FrameDrawer : IDisposable
+public unsafe class VkFrameDrawer : IDisposable
 {
     private readonly VkInstance _instance;
     private Semaphore[]? _imageAvailableSemaphores;
@@ -15,7 +15,7 @@ public unsafe class FrameDrawer : IDisposable
     const int MAX_FRAMES_IN_FLIGHT = 2;
     private bool _frameBufferResized = false;
     
-    public FrameDrawer(VkInstance instance)
+    public VkFrameDrawer(VkInstance instance)
     {
         _instance = instance;
         _instance.Window.Window.Resize += WindowOnResize;
@@ -32,9 +32,7 @@ public unsafe class FrameDrawer : IDisposable
         _imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        
-        var imageLength = instance.SwapChain.SwapChainImageViews!.Length;
-        _imagesInFlight = new Fence[imageLength];
+        _imagesInFlight = new Fence[ instance.SwapChain.SwapChainImageViews!.Length];
 
         SemaphoreCreateInfo semaphoreInfo = new()
         {
@@ -68,11 +66,6 @@ public unsafe class FrameDrawer : IDisposable
 
         uint imageIndex = 0;
         var result = instance.SwapChain.AcquireNextImage(ref imageIndex, _imageAvailableSemaphores![_currentFrame]);
-
-        if (_imagesInFlight![imageIndex].Handle != default)
-        {
-            instance.Vk.WaitForFences(instance.Device.Device, 1, in _imagesInFlight[imageIndex], true, ulong.MaxValue);
-        }
         
         if (result == Result.ErrorOutOfDateKhr)
         {
@@ -82,6 +75,13 @@ public unsafe class FrameDrawer : IDisposable
         else if (result != Result.Success && result != Result.SuboptimalKhr)
         {
             throw new Exception("failed to acquire swap chain image!");
+        }
+        
+        _instance.UniformBuffer.UpdateUniformBuffer(imageIndex);
+        
+        if (_imagesInFlight![imageIndex].Handle != default)
+        {
+            instance.Vk.WaitForFences(instance.Device.Device, 1, in _imagesInFlight[imageIndex], true, ulong.MaxValue);
         }
 
         _imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];
@@ -152,6 +152,7 @@ public unsafe class FrameDrawer : IDisposable
 
     public void Dispose()
     {
+        _currentFrame = 0;
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             _instance.Vk.DestroySemaphore(_instance.Device.Device, _renderFinishedSemaphores![i], null);

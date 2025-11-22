@@ -4,6 +4,7 @@ using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
+using Buffer = System.Buffer;
 
 namespace VulkanTest;
 
@@ -21,10 +22,14 @@ public unsafe class VkInstance : IDisposable
     public readonly VkWindow Window;
     public readonly VkDevice Device;
     public VkSwapChain SwapChain { get; private set; }
+    public VkRenderPass RenderPass { get; private set; }
     public VkGraphicsPipeline GraphicsPipeline { get; private set; }
     public VkCommands Commands { get; private set; }
-    private FrameDrawer _frameDrawer;
-    private VertexBuffer _vertexBuffer;
+    private VkFrameDrawer _vkFrameDrawer;
+    public BufferUtil BufferUtil { get; private set; }
+    public VkVertexBuffer VertexBuffer { get; private set; }
+    public VkUniformBuffer UniformBuffer { get; private set; } 
+    public VkDescriptorPool DescriptorPool { get; private set; }
     
     public VkInstance(int resolutionWidth, int resolutionHeight)
     {
@@ -35,25 +40,6 @@ public unsafe class VkInstance : IDisposable
         Device = new VkDevice(this);
         
         InitializeSwapChain();
-    }
-
-    private void InitializeSwapChain()
-    {
-        SwapChain = new VkSwapChain(this);
-        GraphicsPipeline = new VkGraphicsPipeline(this);
-        Commands = new VkCommands(this);
-        _vertexBuffer = new VertexBuffer(this);
-        Commands.CreateCommandBuffers(this, _vertexBuffer.Buffer);
-        _frameDrawer = new FrameDrawer(this);
-    }
-
-    private void ResetSwapChain()
-    {
-        SwapChain = new VkSwapChain(this);
-        GraphicsPipeline = new VkGraphicsPipeline(this);
-        Commands = new VkCommands(this);
-        Commands.CreateCommandBuffers(this, _vertexBuffer.Buffer);
-        _frameDrawer = new FrameDrawer(this);
     }
     
     private void CreateInstance()
@@ -135,7 +121,7 @@ public unsafe class VkInstance : IDisposable
 
     private void WindowOnRender(double obj)
     {
-        _frameDrawer.DrawFrame(0, this);
+        _vkFrameDrawer.DrawFrame(0, this);
     }
     
     public void RecreateSwapChain()
@@ -149,21 +135,47 @@ public unsafe class VkInstance : IDisposable
         }
 
         Vk.DeviceWaitIdle(Device.Device);
-        DisposeSwapChain();
         ResetSwapChain();
+    }
+    
+    private void InitializeSwapChain()
+    {
+        SwapChain = new VkSwapChain(this);
+        RenderPass = new VkRenderPass(this);
+        GraphicsPipeline = new VkGraphicsPipeline(this);
+        Commands = new VkCommands(this);
+        BufferUtil = new BufferUtil(this);
+        VertexBuffer = new VkVertexBuffer(this);
+        UniformBuffer = new VkUniformBuffer(this);
+        DescriptorPool = new VkDescriptorPool(this);
+        Commands.CreateCommandBuffers();
+        _vkFrameDrawer = new VkFrameDrawer(this);
+    }
+
+    private void ResetSwapChain()
+    {
+        DisposeSwapChain();
+        SwapChain = new VkSwapChain(this);
+        GraphicsPipeline = new VkGraphicsPipeline(this);
+        Commands = new VkCommands(this);
+        Commands.CreateCommandBuffers();
+        _vkFrameDrawer = new VkFrameDrawer(this);
     }
     
     public void Dispose()
     {
-        _vertexBuffer.Dispose();
+        
         DisposeSwapChain();
         DisposeDeviceAndWindow();
     }
     
     private void DisposeSwapChain()
     {
-        _frameDrawer.Dispose();
+        UniformBuffer.Dispose();
+        VertexBuffer.Dispose();
+        _vkFrameDrawer.Dispose();
         Commands.Dispose();
+        RenderPass.Dispose();
         GraphicsPipeline.Dispose();
         SwapChain.Dispose(); 
     }

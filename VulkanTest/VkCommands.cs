@@ -6,7 +6,7 @@ namespace VulkanTest;
 public unsafe class VkCommands : IDisposable
 {
     private readonly VkInstance _instance;
-    private CommandPool _commandPool;
+    public CommandPool CommandPool;
     public CommandBuffer[]? CommandBuffers { get; private set; }
 
     public VkCommands(VkInstance instance)
@@ -14,7 +14,7 @@ public unsafe class VkCommands : IDisposable
         _instance = instance;
         CreateCommandPool(instance);
     }
-    
+
     private void CreateCommandPool(VkInstance instance)
     {
         var queueFamilyIndices = instance.Device.QueueFamilyIndices;
@@ -25,29 +25,32 @@ public unsafe class VkCommands : IDisposable
             QueueFamilyIndex = queueFamilyIndices.GraphicsFamily!.Value,
         };
 
-        if (instance.Vk.CreateCommandPool(instance.Device.Device, in poolInfo, null, out _commandPool) != Result.Success)
+        if (instance.Vk.CreateCommandPool(instance.Device.Device, in poolInfo, null, out CommandPool) != Result.Success)
         {
             throw new Exception("failed to create command pool!");
         }
     }
-    
-     public  void CreateCommandBuffers(VkInstance instance, Buffer vertexBuffer)
-     {
-         var swapChainFramebuffersLength = instance.GraphicsPipeline.SwapChainFramebuffers!.Length;
-        
+
+    public void CreateCommandBuffers()
+    {
+        var swapChainFramebuffersLength = _instance.GraphicsPipeline.SwapChainFramebuffers!.Length;
+
         CommandBuffers = new CommandBuffer[swapChainFramebuffersLength];
 
         CommandBufferAllocateInfo allocInfo = new()
         {
             SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = _commandPool,
+            CommandPool = CommandPool,
             Level = CommandBufferLevel.Primary,
             CommandBufferCount = (uint)CommandBuffers.Length,
         };
 
         fixed (CommandBuffer* commandBuffersPtr = CommandBuffers)
         {
-            if (instance.Vk.AllocateCommandBuffers(instance.Device.Device, in allocInfo, commandBuffersPtr) != Result.Success)
+            if (_instance.Vk.AllocateCommandBuffers(_instance.Device.Device,
+                    in allocInfo,
+                    commandBuffersPtr) !=
+                Result.Success)
             {
                 throw new Exception("failed to allocate command buffers!");
             }
@@ -60,20 +63,21 @@ public unsafe class VkCommands : IDisposable
                 SType = StructureType.CommandBufferBeginInfo,
             };
 
-            if (instance.Vk.BeginCommandBuffer(CommandBuffers[i], in beginInfo) != Result.Success)
+            if (_instance.Vk.BeginCommandBuffer(CommandBuffers[i],
+                    in beginInfo) != Result.Success)
             {
                 throw new Exception("failed to begin recording command buffer!");
             }
-            
+
             RenderPassBeginInfo renderPassInfo = new()
             {
                 SType = StructureType.RenderPassBeginInfo,
-                RenderPass = instance.GraphicsPipeline.RenderPass,
-                Framebuffer = instance.GraphicsPipeline.SwapChainFramebuffers[i],
+                RenderPass = _instance.RenderPass.RenderPass,
+                Framebuffer = _instance.GraphicsPipeline.SwapChainFramebuffers[i],
                 RenderArea =
                 {
                     Offset = { X = 0, Y = 0 },
-                    Extent = instance.SwapChain.SwapChainExtent,
+                    Extent = _instance.SwapChain.SwapChainExtent,
                 }
             };
 
@@ -85,34 +89,61 @@ public unsafe class VkCommands : IDisposable
             renderPassInfo.ClearValueCount = 1;
             renderPassInfo.PClearValues = &clearColor;
 
-            instance.Vk.CmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, SubpassContents.Inline);
+            _instance.Vk.CmdBeginRenderPass(CommandBuffers[i],
+                &renderPassInfo,
+                SubpassContents.Inline);
 
-            instance.Vk.CmdBindPipeline(CommandBuffers[i], PipelineBindPoint.Graphics, instance.GraphicsPipeline.Pipeline);
+            _instance.Vk.CmdBindPipeline(CommandBuffers[i],
+                PipelineBindPoint.Graphics,
+                _instance.GraphicsPipeline.Pipeline);
 
-            
-            var vertexBuffers = new Buffer[] { vertexBuffer };
+
+            var vertexBuffers = new[] { _instance.VertexBuffer.VertexBuffer };
             var offsets = new ulong[] { 0 };
 
             fixed (ulong* offsetsPtr = offsets)
             fixed (Buffer* vertexBuffersPtr = vertexBuffers)
             {
-                _instance.Vk.CmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
+                _instance.Vk.CmdBindVertexBuffers(CommandBuffers[i],
+                    0,
+                    1,
+                    vertexBuffersPtr,
+                    offsetsPtr);
             }
+
+            _instance.Vk.CmdBindIndexBuffer(CommandBuffers![i],
+                _instance.VertexBuffer.IndexBuffer,
+                0,
+                IndexType.Uint16);
             
-            instance.Vk.CmdDraw(CommandBuffers[i], 3, 1, 0, 0);
+            _instance.Vk.CmdBindDescriptorSets(CommandBuffers[i],
+                PipelineBindPoint.Graphics,
+                _instance.GraphicsPipeline.PipelineLayout,
+                0,
+                1,
+                in _instance.DescriptorPool.DescriptorSets![i],
+                0,
+                null);
 
-            instance.Vk.CmdEndRenderPass(CommandBuffers[i]);
+            _instance.Vk.CmdDrawIndexed(CommandBuffers[i],
+                _instance.VertexBuffer.GetIndicesCount(),
+                1,
+                0,
+                0,
+                0);
 
-            if (instance.Vk.EndCommandBuffer(CommandBuffers[i]) != Result.Success)
+
+            _instance.Vk.CmdEndRenderPass(CommandBuffers[i]);
+
+            if (_instance.Vk.EndCommandBuffer(CommandBuffers[i]) != Result.Success)
             {
                 throw new Exception("failed to record command buffer!");
             }
-
         }
     }
 
-     public void Dispose()
-     {
-         _instance.Vk.DestroyCommandPool(_instance.Device.Device, _commandPool, null);
-     }
+    public void Dispose()
+    {
+        _instance.Vk.DestroyCommandPool(_instance.Device.Device, CommandPool, null);
+    }
 }
