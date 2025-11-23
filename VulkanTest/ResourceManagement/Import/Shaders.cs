@@ -1,9 +1,9 @@
 using Silk.NET.Vulkan;
 using VulkanTest.Shaders;
 
-namespace VulkanTest.Import;
+namespace VulkanTest.ResourceManagement.Import;
 
-public class ShaderFactory
+public class Shaders
 {
     private readonly Dictionary<string, ShaderData> _loadedShaders = [];
     
@@ -27,8 +27,10 @@ public class ShaderFactory
 
     public VkShader GetShader(string path, ShaderType shaderType, bool forceReload = false)
     {
-        // TODO: automatically look for compiled by path (although probably need different location for compiled)
-        // TODO: If not already compiled, or out of date, compile
+        // TODO: automatically look for compiled by path (although probably need different location for compiled shaders)
+        // Technically, could load all into memory as well (essentially, check open "scenes" (future way to handle collections of graphics)
+        // and grab what's necessary, also check what's getting referenced (dynamically loaded) somehow?
+        // TODO: If not already compiled, or out of  compared to source, compile
         ImportShader(path, shaderType, forceReload);
         return GetShader(path);
     }

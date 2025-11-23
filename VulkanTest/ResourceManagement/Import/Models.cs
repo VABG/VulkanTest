@@ -2,12 +2,17 @@ using Silk.NET.Assimp;
 using Silk.NET.Maths;
 using VulkanTest.MeshData;
 
-namespace VulkanTest.Import;
+namespace VulkanTest.ResourceManagement.Import;
 
-public static class ModelLoader
+public class Models
 {
-    public static unsafe Model LoadModel(string path)
+    private Dictionary<string, Model> _models = [];
+    
+    public unsafe Model Get(string path)
     {
+        if (_models.TryGetValue(path, out var model))
+            return model;
+        
         using var assimp = Assimp.GetApi();
         var scene = assimp.ImportFile(path, (uint)PostProcessPreset.TargetRealTimeMaximumQuality);
 
@@ -17,11 +22,14 @@ public static class ModelLoader
 
         VisitSceneNode(scene->MRootNode, scene, ref vertexMap, ref vertices, ref indices);
         assimp.ReleaseImport(scene);
-
-        return new Model(vertices.ToArray(), indices.ToArray());
+        
+        model =new Model(vertices.ToArray(), indices.ToArray());;
+        _models[path] = model;
+        
+        return model;
     }
 
-    private static unsafe void VisitSceneNode(Node* node, Scene* scene, ref Dictionary<Vertex, uint> vertexMap,
+    private unsafe void VisitSceneNode(Node* node, Scene* scene, ref Dictionary<Vertex, uint> vertexMap,
         ref List<Vertex> vertices, ref List<uint> indices)
     {
         for (int m = 0; m < node->MNumMeshes; m++)

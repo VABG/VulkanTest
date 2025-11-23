@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using Silk.NET.Vulkan;
-using VulkanTest.Import;
 using VulkanTest.MeshData;
 using Buffer = Silk.NET.Vulkan.Buffer;
 

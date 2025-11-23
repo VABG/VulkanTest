@@ -1,6 +1,6 @@
 using VulkanTest.Shaders;
 
-namespace VulkanTest.Import;
+namespace VulkanTest.ResourceManagement.Import;
 
 public class ShaderData(byte[] byteCode, ShaderType shaderType)
 {

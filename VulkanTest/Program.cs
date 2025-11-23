@@ -1,4 +1,4 @@
-using VulkanTest.Compile;
+using VulkanTest.ResourceManagement.Compile;
 
 namespace VulkanTest;
 

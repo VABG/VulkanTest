@@ -1,8 +1,8 @@
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using VulkanTest.Import;
 using VulkanTest.Rendering.Assets;
 using VulkanTest.Rendering.Utils;
+using VulkanTest.ResourceManagement;
 
 namespace VulkanTest.Rendering;
 
@@ -27,7 +27,7 @@ public class VkRender : IDisposable
     public VkUniformBuffer UniformBuffer { get; private set; } 
     public VkDescriptorPool DescriptorPool { get; private set; }
 
-    public readonly ShaderFactory ShaderFactory;
+    public readonly ResourceManagement.Import.Shaders Shaders;
 
     public readonly MemoryUtil MemoryUtil;
     public readonly ImageUtil ImageUtil;
@@ -43,7 +43,7 @@ public class VkRender : IDisposable
         ImageUtil = new ImageUtil(MemoryUtil);
         DepthFormatUtil = new DepthFormatUtil();
         CommandBufferUtil = new CommandBufferUtil(MemoryUtil, _device);
-        ShaderFactory = new ShaderFactory();
+        Shaders = new ResourceManagement.Import.Shaders();
         
         SwapChain = new VkSwapChain(_device, _window);
         DepthImage = new VkDepthImage(this);
@@ -53,7 +53,7 @@ public class VkRender : IDisposable
         Commands = new VkCommands(_device);
 
         ImageView = new VkImageView(this);
-        Model = new VkModel(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
+        Model = new VkModel(this, Resources.Models.Get(@"Assets\viking_room.obj"));
         UniformBuffer = new VkUniformBuffer(this);
         DescriptorPool = new VkDescriptorPool(this);
         Commands.CreateCommandBuffers(this);

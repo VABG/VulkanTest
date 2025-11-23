@@ -1,6 +1,6 @@
 using Glslang.NET;
 
-namespace VulkanTest.Compile;
+namespace VulkanTest.ResourceManagement.Compile;
 
 public static class ShaderCompiler
 {
