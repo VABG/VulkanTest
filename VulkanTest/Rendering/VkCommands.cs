@@ -103,7 +103,7 @@ public unsafe class VkCommands : IDisposable
                 PipelineBindPoint.Graphics,
                 render.GraphicsPipeline.Pipeline);
 
-            var vertexBuffers = new[] { render.VertexBuffer.VertexBuffer };
+            var vertexBuffers = new[] { render.ModelBuffer.VertexBuffer };
             var offsets = new ulong[] { 0 };
 
             fixed (ulong* offsetsPtr = offsets)
@@ -117,7 +117,7 @@ public unsafe class VkCommands : IDisposable
             }
 
             VkUtil.Vk.CmdBindIndexBuffer(CommandBuffers![i],
-                render.VertexBuffer.IndexBuffer,
+                render.ModelBuffer.IndexBuffer,
                 0,
                 IndexType.Uint32);
 
@@ -131,7 +131,7 @@ public unsafe class VkCommands : IDisposable
                 null);
 
             VkUtil.Vk.CmdDrawIndexed(CommandBuffers[i],
-                render.VertexBuffer.GetIndicesCount(),
+                render.ModelBuffer.GetIndicesCount(),
                 1,
                 0,
                 0,

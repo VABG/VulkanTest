@@ -21,7 +21,7 @@ public class VkRender : IDisposable
     public VkImageView ImageView { get; private set; }
     
     public CommandBufferUtil CommandBufferUtil { get; private set; }
-    public VkVertexBuffer VertexBuffer { get; private set; }
+    public VkModelBuffer ModelBuffer { get; private set; }
     public VkUniformBuffer UniformBuffer { get; private set; } 
     public VkDescriptorPool DescriptorPool { get; private set; }
 
@@ -51,7 +51,7 @@ public class VkRender : IDisposable
         Commands = new VkCommands(_device);
 
         ImageView = new VkImageView(this);
-        VertexBuffer = new VkVertexBuffer(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
+        ModelBuffer = new VkModelBuffer(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
         UniformBuffer = new VkUniformBuffer(this);
         DescriptorPool = new VkDescriptorPool(this);
         Commands.CreateCommandBuffers(this);
@@ -98,7 +98,7 @@ public class VkRender : IDisposable
     {
         DisposeSwapChain();
         ImageView.Dispose();
-        VertexBuffer.Dispose();
+        ModelBuffer.Dispose();
     }
     
     private void DisposeSwapChain()
