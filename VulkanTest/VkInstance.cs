@@ -41,11 +41,11 @@ public unsafe class VkInstance : IDisposable
         ApplicationInfo appInfo = new()
         {
             SType = StructureType.ApplicationInfo,
-            PApplicationName = (byte*)Marshal.StringToHGlobalAnsi("Hello Triangle"),
+            PApplicationName = (byte*)Marshal.StringToHGlobalAnsi("Hello Vulkan"),
             ApplicationVersion = new Version32(1, 0, 0),
-            PEngineName = (byte*)Marshal.StringToHGlobalAnsi("No Engine"),
+            PEngineName = (byte*)Marshal.StringToHGlobalAnsi("Test Engine"),
             EngineVersion = new Version32(1, 0, 0),
-            ApiVersion = Vk.Version12
+            ApiVersion = Vk.Version13
         };
 
         InstanceCreateInfo createInfo = new()

@@ -1,3 +1,5 @@
+using VulkanTest.Compile;
+
 namespace VulkanTest;
 
 public class Program
@@ -15,6 +17,10 @@ public class Program
 
     private void Run()
     {
+        ShaderCompiler.CompileShadersInDirectory(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets"), 
+            true);
+        
         _instance = new VkInstance(Width, Height);
         MainLoop();
         CleanUp();

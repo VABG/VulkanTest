@@ -27,6 +27,8 @@ public class ShaderFactory
 
     public VkShader GetShader(string path, ShaderType shaderType, bool forceReload = false)
     {
+        // TODO: automatically look for compiled by path (although probably need different location for compiled)
+        // TODO: If not already compiled, or out of date, compile
         ImportShader(path, shaderType, forceReload);
         return GetShader(path);
     }

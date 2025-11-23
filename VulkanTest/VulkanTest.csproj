@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Glslang.NET" Version="1.2.0" />
       <PackageReference Include="Silk.NET" Version="2.22.0" />
       <PackageReference Include="Silk.NET.Assimp" Version="2.22.0" />
       <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.22.0" />
@@ -28,10 +29,10 @@
       <None Update="Assets\viking_room.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="Assets\Shaders\vert.spv">
+      <None Update="Assets\Shaders\shader.frag">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="Assets\Shaders\frag.spv">
+      <None Update="Assets\Shaders\shader.vert">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
@@ -39,9 +40,4 @@
     <ItemGroup>
       <Folder Include="Assets\" />
     </ItemGroup>
-
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-      <Exec Command="C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Assets/Shaders/shader.vert -o Shaders/vert.spv&#xA;C:/VulkanSDK/1.4.328.1/Bin/glslc.exe Assets/Shaders/shader.frag -o Shaders/frag.spv" />
-    </Target>
-
 </Project>
