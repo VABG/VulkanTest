@@ -6,20 +6,22 @@ namespace VulkanTest;
 
 public unsafe class VkFrameDrawer : IDisposable
 {
-    private readonly VkInstance _instance;
+    private readonly VkDevice _device;
+    private readonly VkRender _render;
     private Semaphore[]? _imageAvailableSemaphores;
     private Semaphore[]? _renderFinishedSemaphores;
     private Fence[]? _inFlightFences;
     private Fence[]? _imagesInFlight;
-    private int _currentFrame = 0;
+    private int _currentFrame;
     const int MAX_FRAMES_IN_FLIGHT = 2;
-    private bool _frameBufferResized = false;
+    private bool _frameBufferResized;
     
-    public VkFrameDrawer(VkInstance instance)
+    public VkFrameDrawer(VkWindow window, VkDevice device, VkRender render)
     {
-        _instance = instance;
-        _instance.Window.Window.Resize += WindowOnResize;
-        CreateSyncObjects(instance);
+        _device = device;
+        _render = render;
+        window.Window.Resize += WindowOnResize;
+        CreateSyncObjects();
     }
 
     private void WindowOnResize(Vector2D<int> obj)
@@ -27,12 +29,12 @@ public unsafe class VkFrameDrawer : IDisposable
         _frameBufferResized = true;
     }
 
-    private void CreateSyncObjects(VkInstance instance)
+    private void CreateSyncObjects()
     {
         _imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         _inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        _imagesInFlight = new Fence[ instance.SwapChain.SwapChainImageViews!.Length];
+        _imagesInFlight = new Fence[ _render.SwapChain.SwapChainImageViews!.Length];
 
         SemaphoreCreateInfo semaphoreInfo = new()
         {
@@ -45,31 +47,30 @@ public unsafe class VkFrameDrawer : IDisposable
             Flags = FenceCreateFlags.SignaledBit,
         };
 
-        var device = instance.Device.Device;
 
         for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            if (instance.Vk.CreateSemaphore(device, in semaphoreInfo, null, out _imageAvailableSemaphores[i]) !=
+            if (VkUtil.Vk.CreateSemaphore(VkUtil.Device, in semaphoreInfo, null, out _imageAvailableSemaphores[i]) !=
                 Result.Success ||
-                instance.Vk.CreateSemaphore(device, in semaphoreInfo, null, out _renderFinishedSemaphores[i]) !=
+                VkUtil.Vk.CreateSemaphore(VkUtil.Device, in semaphoreInfo, null, out _renderFinishedSemaphores[i]) !=
                 Result.Success ||
-                instance.Vk.CreateFence(device, in fenceInfo, null, out _inFlightFences[i]) != Result.Success)
+                VkUtil.Vk.CreateFence(VkUtil.Device, in fenceInfo, null, out _inFlightFences[i]) != Result.Success)
             {
                 throw new Exception("failed to create synchronization objects for a frame!");
             }
         }
     }
 
-    public void DrawFrame(double delta, VkInstance instance)
+    public void DrawFrame(double delta, float time)
     {
-        instance.Vk.WaitForFences(instance.Device.Device, 1, in _inFlightFences![_currentFrame], true, ulong.MaxValue);
+        VkUtil.Vk.WaitForFences(VkUtil.Device, 1, in _inFlightFences![_currentFrame], true, ulong.MaxValue);
 
         uint imageIndex = 0;
-        var result = instance.SwapChain.AcquireNextImage(ref imageIndex, _imageAvailableSemaphores![_currentFrame]);
+        var result = _render.SwapChain.AcquireNextImage(ref imageIndex, _imageAvailableSemaphores![_currentFrame]);
         
         if (result == Result.ErrorOutOfDateKhr)
         {
-            _instance.RecreateSwapChain();
+            _render.RecreateSwapChain();
             return;
         }
         else if (result != Result.Success && result != Result.SuboptimalKhr)
@@ -77,11 +78,11 @@ public unsafe class VkFrameDrawer : IDisposable
             throw new Exception("failed to acquire swap chain image!");
         }
         
-        _instance.UniformBuffer.UpdateUniformBuffer(imageIndex);
+        _render.UniformBuffer.UpdateUniformBuffer(imageIndex, time, _render);
         
         if (_imagesInFlight![imageIndex].Handle != default)
         {
-            instance.Vk.WaitForFences(instance.Device.Device, 1, in _imagesInFlight[imageIndex], true, ulong.MaxValue);
+            VkUtil.Vk.WaitForFences(VkUtil.Device, 1, in _imagesInFlight[imageIndex], true, ulong.MaxValue);
         }
 
         _imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];
@@ -94,7 +95,7 @@ public unsafe class VkFrameDrawer : IDisposable
         var waitSemaphores = stackalloc[] { _imageAvailableSemaphores[_currentFrame] };
         var waitStages = stackalloc[] { PipelineStageFlags.ColorAttachmentOutputBit };
 
-        var buffer = instance.Commands.CommandBuffers![imageIndex];
+        var buffer = _render.Commands.CommandBuffers![imageIndex];
 
         submitInfo = submitInfo with
         {
@@ -113,15 +114,15 @@ public unsafe class VkFrameDrawer : IDisposable
             PSignalSemaphores = signalSemaphores,
         };
 
-        instance.Vk.ResetFences(instance.Device.Device, 1, in _inFlightFences[_currentFrame]);
+        VkUtil.Vk.ResetFences(VkUtil.Device, 1, in _inFlightFences[_currentFrame]);
 
-        if (instance.Vk.QueueSubmit(instance.Device.GraphicsQueue, 1, in submitInfo, _inFlightFences[_currentFrame]) !=
+        if (VkUtil.Vk.QueueSubmit(_device.GraphicsQueue, 1, in submitInfo, _inFlightFences[_currentFrame]) !=
             Result.Success)
         {
             throw new Exception("failed to submit draw command buffer!");
         }
 
-        var swapChains = stackalloc[] { instance.SwapChain.SwapChain };
+        var swapChains = stackalloc[] { _render.SwapChain.SwapChain };
         PresentInfoKHR presentInfo = new()
         {
             SType = StructureType.PresentInfoKhr,
@@ -135,12 +136,12 @@ public unsafe class VkFrameDrawer : IDisposable
             PImageIndices = &imageIndex
         };
 
-        result = instance.SwapChain.KhrSwapChain!.QueuePresent(instance.Device.PresentQueue, in presentInfo);
+        result = _render.SwapChain.KhrSwapChain!.QueuePresent(_device.PresentQueue, in presentInfo);
 
         if (result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || _frameBufferResized)
         {
             _frameBufferResized = false;
-            _instance.RecreateSwapChain();
+            _render.RecreateSwapChain();
         }
         else if (result != Result.Success)
         {
@@ -155,9 +156,9 @@ public unsafe class VkFrameDrawer : IDisposable
         _currentFrame = 0;
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            _instance.Vk.DestroySemaphore(_instance.Device.Device, _renderFinishedSemaphores![i], null);
-            _instance.Vk.DestroySemaphore(_instance.Device.Device, _imageAvailableSemaphores![i], null);
-            _instance.Vk.DestroyFence(_instance.Device.Device, _inFlightFences![i], null);
+            VkUtil.Vk.DestroySemaphore(VkUtil.Device, _renderFinishedSemaphores![i], null);
+            VkUtil.Vk.DestroySemaphore(VkUtil.Device, _imageAvailableSemaphores![i], null);
+            VkUtil.Vk.DestroyFence(VkUtil.Device, _inFlightFences![i], null);
         }
     }
 }

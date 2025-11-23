@@ -6,7 +6,6 @@ namespace VulkanTest;
 
 public unsafe class VkVertexBuffer : IDisposable
 {
-    private readonly VkInstance _instance;
     private readonly Model _model;
 
     //TODO: Generalize buffer (at least data and creation)
@@ -16,17 +15,16 @@ public unsafe class VkVertexBuffer : IDisposable
     public Buffer IndexBuffer;
     private DeviceMemory _indexBufferMemory;
 
-    public VkVertexBuffer(VkInstance instance, Model model)
+    public VkVertexBuffer(VkRender render, Model model)
     {
-        _instance = instance;
         _model = model;
-        CreateVertexBuffer();
-        CreateIndexBuffer();
+        CreateVertexBuffer(render);
+        CreateIndexBuffer(render);
     }
 
     public uint GetIndicesCount() => (uint)_model.Indices.Length;
 
-    private void CreateVertexBuffer()
+    private void CreateVertexBuffer(VkRender render)
     {
         var vertices = _model.Vertices;
 
@@ -34,7 +32,7 @@ public unsafe class VkVertexBuffer : IDisposable
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
+        render.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             ref stagingBuffer,
@@ -42,57 +40,57 @@ public unsafe class VkVertexBuffer : IDisposable
 
         
         void* data;
-        _instance.Vk.MapMemory(_instance.Device.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        VkUtil.Vk.MapMemory(VkUtil.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
         vertices.AsSpan().CopyTo(new Span<Vertex>(data, vertices.Length));
-        _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
+        VkUtil.Vk.UnmapMemory(VkUtil.Device, stagingBufferMemory);
 
-        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
+        render.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit,
             MemoryPropertyFlags.DeviceLocalBit,
             ref VertexBuffer,
             ref _vertexBufferMemory);
 
-        _instance.CommandBufferUtil.CopyBuffer(stagingBuffer, VertexBuffer, bufferSize);
+        render.CommandBufferUtil.CopyBuffer(stagingBuffer, VertexBuffer, bufferSize, render.Commands.CommandPool);
 
-        _instance.Vk.DestroyBuffer(_instance.Device.Device, stagingBuffer, null);
-        _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);
+        VkUtil.Vk.DestroyBuffer(VkUtil.Device, stagingBuffer, null);
+        VkUtil.Vk.FreeMemory(VkUtil.Device, stagingBufferMemory, null);
     }
 
-    private void CreateIndexBuffer()
+    private void CreateIndexBuffer(VkRender render)
     {
         var indices = _model.Indices;
         ulong bufferSize = (ulong)(Unsafe.SizeOf<uint>() * indices.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
+        render.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferSrcBit,
             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
             ref stagingBuffer,
             ref stagingBufferMemory);
 
         void* data;
-        _instance.Vk.MapMemory(_instance.Device.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        VkUtil.Vk.MapMemory(VkUtil.Device, stagingBufferMemory, 0, bufferSize, 0, &data);
         indices.AsSpan().CopyTo(new Span<uint>(data, indices.Length));
-        _instance.Vk.UnmapMemory(_instance.Device.Device, stagingBufferMemory);
+        VkUtil.Vk.UnmapMemory(VkUtil.Device, stagingBufferMemory);
 
-        _instance.CommandBufferUtil.CreateBuffer(bufferSize,
+        render.CommandBufferUtil.CreateBuffer(bufferSize,
             BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit,
             MemoryPropertyFlags.DeviceLocalBit,
             ref IndexBuffer,
             ref _indexBufferMemory);
 
-        _instance.CommandBufferUtil.CopyBuffer(stagingBuffer, IndexBuffer, bufferSize);
+        render.CommandBufferUtil.CopyBuffer(stagingBuffer, IndexBuffer, bufferSize, render.Commands.CommandPool);
 
-        _instance.Vk.DestroyBuffer(_instance.Device.Device, stagingBuffer, null);
-        _instance.Vk.FreeMemory(_instance.Device.Device, stagingBufferMemory, null);
+        VkUtil.Vk.DestroyBuffer(VkUtil.Device, stagingBuffer, null);
+        VkUtil.Vk.FreeMemory(VkUtil.Device, stagingBufferMemory, null);
     }
 
     public void Dispose()
     {
-        _instance.Vk.DestroyBuffer(_instance.Device.Device, VertexBuffer, null);
-        _instance.Vk.FreeMemory(_instance.Device.Device, _vertexBufferMemory, null);
-        _instance.Vk.DestroyBuffer(_instance.Device.Device, IndexBuffer, null);
-        _instance.Vk.FreeMemory(_instance.Device.Device, _indexBufferMemory, null);
+        VkUtil.Vk.DestroyBuffer(VkUtil.Device, VertexBuffer, null);
+        VkUtil.Vk.FreeMemory(VkUtil.Device, _vertexBufferMemory, null);
+        VkUtil.Vk.DestroyBuffer(VkUtil.Device, IndexBuffer, null);
+        VkUtil.Vk.FreeMemory(VkUtil.Device, _indexBufferMemory, null);
     }
 }

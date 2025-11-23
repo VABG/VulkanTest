@@ -4,21 +4,19 @@ namespace VulkanTest;
 
 public class VkRenderPass : IDisposable
 {
-    private readonly VkInstance _instance;
     public RenderPass RenderPass { get; private set; }
     
-    public VkRenderPass(VkInstance instance)
+    public VkRenderPass(VkRender render)
     {
-        _instance = instance;
-        CreateRenderPass(instance);
+        CreateRenderPass(render);
     }
     
-    private unsafe void CreateRenderPass(VkInstance instance)
+    private unsafe void CreateRenderPass(VkRender render)
     {
         AttachmentDescription colorAttachment = new()
         {
-            Format = instance.SwapChain.SwapChainImageFormat,
-            Samples = _instance.Device.MaxMsaaSamples,
+            Format = render.SwapChain.SwapChainImageFormat,
+            Samples = render.MsaaSamples,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
             StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -28,8 +26,8 @@ public class VkRenderPass : IDisposable
         
         AttachmentDescription depthAttachment = new()
         {
-            Format = _instance.DepthFormatUtil.FindDepthFormat(),
-            Samples = _instance.Device.MaxMsaaSamples,
+            Format = render.DepthFormatUtil.FindDepthFormat(),
+            Samples = render.MsaaSamples,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.DontCare,
             StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -77,7 +75,7 @@ public class VkRenderPass : IDisposable
         
         AttachmentDescription colorAttachmentResolve = new()
         {
-            Format = instance.SwapChain.SwapChainImageFormat,
+            Format = render.SwapChain.SwapChainImageFormat,
             Samples = SampleCountFlags.Count1Bit,
             LoadOp = AttachmentLoadOp.DontCare,
             StoreOp = AttachmentStoreOp.Store,
@@ -102,7 +100,7 @@ public class VkRenderPass : IDisposable
                 PDependencies = &dependency,
             };
             
-            if (instance.Vk.CreateRenderPass(instance.Device.Device, in renderPassInfo, null, out var renderPass) !=
+            if (VkUtil.Vk.CreateRenderPass(VkUtil.Device, in renderPassInfo, null, out var renderPass) !=
                 Result.Success)
             {
                 throw new Exception("failed to create render pass!");
@@ -115,6 +113,6 @@ public class VkRenderPass : IDisposable
 
     public unsafe void Dispose()
     {
-        _instance.Vk.DestroyRenderPass(_instance.Device.Device, RenderPass, null);
+        VkUtil.Vk.DestroyRenderPass(VkUtil.Device, RenderPass, null);
     }
 }

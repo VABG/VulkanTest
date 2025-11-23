@@ -4,22 +4,20 @@ namespace VulkanTest;
 
 public class VkImageView : IDisposable
 {
-    private readonly VkInstance _instance;
     public ImageView TextureImageView { get; private set; }
     public Sampler TextureSampler;
     public readonly VkTexture Texture; 
 
-    public VkImageView(VkInstance instance)
+    public VkImageView(VkRender render)
     {
-        _instance = instance;
-        Texture = new VkTexture(instance);
-        TextureImageView = _instance.ImageUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb,  ImageAspectFlags.ColorBit, Texture.MipLevels);
+        Texture = new VkTexture(render);
+        TextureImageView = render.ImageUtil.CreateImageView(Texture.Image, Format.R8G8B8A8Srgb,  ImageAspectFlags.ColorBit, Texture.MipLevels);
         CreateTextureSampler();
     }
     
     private unsafe void CreateTextureSampler()
     {
-        _instance.Vk.GetPhysicalDeviceProperties(_instance.Device.PhysicalDevice, out PhysicalDeviceProperties properties);
+        VkUtil.Vk.GetPhysicalDeviceProperties(VkUtil.PhysicalDevice, out PhysicalDeviceProperties properties);
 
         SamplerCreateInfo samplerInfo = new()
         {
@@ -43,7 +41,7 @@ public class VkImageView : IDisposable
 
         fixed (Sampler* textureSamplerPtr = &TextureSampler)
         {
-            if (_instance.Vk.CreateSampler(_instance.Device.Device, in samplerInfo, null, textureSamplerPtr) != Result.Success)
+            if (VkUtil.Vk.CreateSampler(VkUtil.Device, in samplerInfo, null, textureSamplerPtr) != Result.Success)
             {
                 throw new Exception("failed to create texture sampler!");
             }
@@ -53,7 +51,7 @@ public class VkImageView : IDisposable
     public unsafe void Dispose()
     {
         Texture.Dispose();
-        _instance.Vk.DestroySampler(_instance.Device.Device, TextureSampler, null);
-        _instance.Vk.DestroyImageView(_instance.Device.Device, TextureImageView, null);
+        VkUtil.Vk.DestroySampler(VkUtil.Device, TextureSampler, null);
+        VkUtil.Vk.DestroyImageView(VkUtil.Device, TextureImageView, null);
     }
 }

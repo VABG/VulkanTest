@@ -6,36 +6,31 @@ namespace VulkanTest;
 
 public unsafe class VkValidationLayers : IDisposable
 {
-    private readonly VkInstance _vkInstance;
-    private ExtDebugUtils? _debugUtils;
+    private readonly ExtDebugUtils _debugUtils;
     private DebugUtilsMessengerEXT _debugMessenger;
     
     public readonly string[] ValidationLayers = ["VK_LAYER_KHRONOS_validation"];
 
-    public VkValidationLayers(VkInstance vkInstance)
+    public VkValidationLayers(Vk vk, Instance instance)
     {
-        _vkInstance = vkInstance;
+        _debugUtils = SetupDebugMessenger(vk, instance);
+        CheckValidationLayerSupport(vk);
     }
-    
-    
-    public void Dispose()
+
+    private ExtDebugUtils SetupDebugMessenger(Vk vk, Instance instance)
     {
-        _debugUtils?.DestroyDebugUtilsMessenger(_vkInstance.Instance, _debugMessenger, null);
-        _debugUtils?.Dispose();
-    }
-    
-    public void SetupDebugMessenger()
-    {
-        //TryGetInstanceExtension equivalent to method CreateDebugUtilsMessengerEXT from original tutorial.
-        if (!_vkInstance.Vk!.TryGetInstanceExtension(_vkInstance.Instance, out _debugUtils)) return;
+        if (!vk.TryGetInstanceExtension(instance, out ExtDebugUtils extDebugUtils))
+            throw new Exception("Failed to setup debug messenger!");
 
         DebugUtilsMessengerCreateInfoEXT createInfo = new();
         PopulateDebugMessengerCreateInfo(ref createInfo);
 
-        if (_debugUtils!.CreateDebugUtilsMessenger(_vkInstance.Instance, in createInfo, null, out _debugMessenger) != Result.Success)
+        if (extDebugUtils!.CreateDebugUtilsMessenger(instance, in createInfo, null, out _debugMessenger) != Result.Success)
         {
             throw new Exception("failed to set up debug messenger!");
         }
+
+        return extDebugUtils;
     }
     
     public void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
@@ -50,24 +45,31 @@ public unsafe class VkValidationLayers : IDisposable
         createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
     }
     
-    public bool CheckValidationLayerSupport()
+    private void CheckValidationLayerSupport(Vk vk)
     {
         uint layerCount = 0;
-        _vkInstance.Vk.EnumerateInstanceLayerProperties(ref layerCount, null);
+        vk.EnumerateInstanceLayerProperties(ref layerCount, null);
         var availableLayers = new LayerProperties[layerCount];
         fixed (LayerProperties* availableLayersPtr = availableLayers)
         {
-            _vkInstance.Vk.EnumerateInstanceLayerProperties(ref layerCount, availableLayersPtr);
+            vk.EnumerateInstanceLayerProperties(ref layerCount, availableLayersPtr);
         }
 
         var availableLayerNames = availableLayers.Select(layer => Marshal.PtrToStringAnsi((IntPtr)layer.LayerName)).ToHashSet();
 
-        return ValidationLayers.All(availableLayerNames.Contains);
+        if (!ValidationLayers.All(availableLayerNames.Contains))
+            throw new Exception("validation layers requested, but not available!");
     }
     
     private uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
     {
         System.Diagnostics.Debug.WriteLine($"validation layer:" + Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage));
         return Vk.False;
+    }
+    
+    public void Dispose()
+    {
+        _debugUtils.DestroyDebugUtilsMessenger(VkUtil.Instance, _debugMessenger, null);
+        _debugUtils.Dispose();
     }
 }

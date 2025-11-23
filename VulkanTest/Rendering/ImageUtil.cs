@@ -4,11 +4,11 @@ namespace VulkanTest;
 
 public class ImageUtil
 {
-    private readonly VkInstance _instance;
+    private readonly MemoryUtil _memoryUtil;
 
-    public ImageUtil(VkInstance instance)
+    public ImageUtil(MemoryUtil memoryUtil)
     {
-        _instance = instance;
+        _memoryUtil = memoryUtil;
     }
     
     public unsafe ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags, uint mipLevels)
@@ -38,7 +38,7 @@ public class ImageUtil
         };
 
 
-        if (_instance.Vk.CreateImageView(_instance.Device.Device, in createInfo, null, out ImageView imageView) != Result.Success)
+        if (VkUtil.Vk.CreateImageView(VkUtil.Device, in createInfo, null, out ImageView imageView) != Result.Success)
         {
             throw new Exception("failed to create image views!");
         }
@@ -70,29 +70,29 @@ public class ImageUtil
 
         fixed (Image* imagePtr = &image)
         {
-            if (_instance.Vk.CreateImage(_instance.Device.Device, in imageInfo, null, imagePtr) != Result.Success)
+            if (VkUtil.Vk.CreateImage(VkUtil.Device, in imageInfo, null, imagePtr) != Result.Success)
             {
                 throw new Exception("failed to create image!");
             }
         }
 
-        _instance.Vk.GetImageMemoryRequirements(_instance.Device.Device, image, out MemoryRequirements memRequirements);
+        VkUtil.Vk.GetImageMemoryRequirements(VkUtil.Device, image, out MemoryRequirements memRequirements);
 
         MemoryAllocateInfo allocInfo = new()
         {
             SType = StructureType.MemoryAllocateInfo,
             AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = _instance.MemoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
+            MemoryTypeIndex = _memoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
         };
 
         fixed (DeviceMemory* imageMemoryPtr = &imageMemory)
         {
-            if (_instance.Vk.AllocateMemory(_instance.Device.Device, in allocInfo, null, imageMemoryPtr) != Result.Success)
+            if (VkUtil.Vk.AllocateMemory(VkUtil.Device, in allocInfo, null, imageMemoryPtr) != Result.Success)
             {
                 throw new Exception("failed to allocate image memory!");
             }
         }
 
-        _instance.Vk.BindImageMemory(_instance.Device.Device, image, imageMemory, 0);
+        VkUtil.Vk.BindImageMemory(VkUtil.Device, image, imageMemory, 0);
     }
 }

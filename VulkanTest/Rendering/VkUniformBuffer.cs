@@ -7,47 +7,33 @@ namespace VulkanTest;
 
 public class VkUniformBuffer : IDisposable
 {
-    private readonly VkInstance _instance;
     public Buffer[] UniformBuffers;
     private DeviceMemory[]? _uniformBuffersMemory;
     
-    public VkUniformBuffer(VkInstance instance)
+    public VkUniformBuffer(VkRender render)
     {
-        _instance = instance;
-        CreateUniformBuffers();
+        CreateUniformBuffers(render);
     }
 
-    private void CreateUniformBuffers()
+    private void CreateUniformBuffers(VkRender render)
     {
         var bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
 
-        var swapChainImagesLength = _instance.SwapChain.SwapChainImages!.Length;
+        var swapChainImagesLength = render.SwapChain.SwapChainImages!.Length;
         UniformBuffers = new Buffer[swapChainImagesLength];
         _uniformBuffersMemory = new DeviceMemory[swapChainImagesLength];
 
         for (int i = 0; i < swapChainImagesLength; i++)
-            _instance.CommandBufferUtil.CreateBuffer(bufferSize,
+            render.CommandBufferUtil.CreateBuffer(bufferSize,
                 BufferUsageFlags.UniformBufferBit,
                 MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                 ref UniformBuffers[i],
                 ref _uniformBuffersMemory[i]);
     }
-
-    public unsafe void Dispose()
-    {
-        for (int i = 0; i < _instance.SwapChain.SwapChainImages!.Length; i++)
-        {
-            _instance.Vk.DestroyBuffer(_instance.Device.Device, UniformBuffers[i], null);
-            _instance.Vk.FreeMemory(_instance.Device.Device, _uniformBuffersMemory![i], null);
-        }
-    }
     
-    public unsafe void UpdateUniformBuffer(uint currentImage)
+    public unsafe void UpdateUniformBuffer(uint currentImage, float time, VkRender render)
     {
-        //Silk Window has timing information so we are skipping the time code.
-        var time = (float)_instance.Window.Window.Time;
-
-        var extents = _instance.SwapChain.SwapChainExtent;
+        var extents = render.SwapChain.SwapChainExtent;
         
         UniformBufferObject ubo = new()
         {
@@ -58,8 +44,22 @@ public class VkUniformBuffer : IDisposable
         ubo.Proj.M22 *= -1;
 
         void* data;
-        _instance.Vk.MapMemory(_instance.Device.Device, _uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
+        VkUtil.Vk.MapMemory(VkUtil.Device, _uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
         new Span<UniformBufferObject>(data, 1)[0] = ubo;
-        _instance.Vk.UnmapMemory(_instance.Device.Device, _uniformBuffersMemory![currentImage]);
+        VkUtil.Vk.UnmapMemory(VkUtil.Device, _uniformBuffersMemory![currentImage]);
+    }
+    
+    public unsafe void Dispose()
+    {
+        foreach (var buffer in UniformBuffers)
+        {
+            VkUtil.Vk.DestroyBuffer(VkUtil.Device, buffer, null);
+        }
+        
+        foreach (var bufferMemory in _uniformBuffersMemory)
+        {
+            VkUtil.Vk.FreeMemory(VkUtil.Device, bufferMemory, null);
+        }
+
     }
 }

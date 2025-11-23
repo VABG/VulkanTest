@@ -14,7 +14,6 @@ public struct SwapChainSupportDetails
 
 public class VkSwapChain : IDisposable
 {
-    private readonly VkInstance _instance;
     public KhrSwapchain? KhrSwapChain { get; private set; }
     public SwapchainKHR SwapChain { get; private set; }
     public Image[]? SwapChainImages { get; private set; }
@@ -22,25 +21,23 @@ public class VkSwapChain : IDisposable
     public Extent2D SwapChainExtent { get; private set; }
     public ImageView[]? SwapChainImageViews { get; private set; }
 
-    public VkSwapChain(VkInstance instance)
+    public VkSwapChain(VkDevice device, VkWindow window)
     {
-        _instance = instance;
-        CreateSwapChain(instance);
-        CreateImageViews(instance);
+        CreateSwapChain(device, window);
+        CreateImageViews();
     }
 
     public Result AcquireNextImage(ref uint imageIndex, Semaphore imageSemaphore)
     { 
-        return KhrSwapChain!.AcquireNextImage(_instance.Device.Device, SwapChain, ulong.MaxValue, imageSemaphore, default, ref imageIndex);
+        return KhrSwapChain!.AcquireNextImage(VkUtil.Device, SwapChain, ulong.MaxValue, imageSemaphore, default, ref imageIndex);
     }
-    
 
-    private unsafe void CreateSwapChain(VkInstance instance)
+    private unsafe void CreateSwapChain(VkDevice device, VkWindow window)
     {
-        var swapChainSupport = instance.Device.QuerySwapChainSupport(instance.Device.PhysicalDevice, instance);
+        var swapChainSupport = device.QuerySwapChainSupport(VkUtil.PhysicalDevice);
         var surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
         var presentMode = ChoosePresentMode(swapChainSupport.PresentModes);
-        var extent = ChooseSwapExtent(swapChainSupport.Capabilities, instance.Window.Window);
+        var extent = ChooseSwapExtent(swapChainSupport.Capabilities, window.Window);
 
         var imageCount = swapChainSupport.Capabilities.MinImageCount;
         if (swapChainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapChainSupport.Capabilities.MaxImageCount)
@@ -51,7 +48,7 @@ public class VkSwapChain : IDisposable
         SwapchainCreateInfoKHR createInfo = new()
         {
             SType = StructureType.SwapchainCreateInfoKhr,
-            Surface = instance.Device.Surface,
+            Surface = device.Surface,
 
             MinImageCount = imageCount,
             ImageFormat = surfaceFormat.Format,
@@ -61,7 +58,7 @@ public class VkSwapChain : IDisposable
             ImageUsage = ImageUsageFlags.ColorAttachmentBit,
         };
 
-        var indices = instance.Device.QueueFamilyIndices;
+        var indices = device.QueueFamilyIndices;
         var queueFamilyIndices = stackalloc[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
 
         if (indices.GraphicsFamily != indices.PresentFamily)
@@ -88,7 +85,7 @@ public class VkSwapChain : IDisposable
             OldSwapchain = default
         };
 
-        if (!instance.Vk.TryGetDeviceExtension(instance.Instance, instance.Device.Device, out KhrSwapchain khrSwapChain))
+        if (!VkUtil.Vk.TryGetDeviceExtension(VkUtil.Instance, VkUtil.Device, out KhrSwapchain khrSwapChain))
         {
             throw new NotSupportedException("VK_KHR_swapchain extension not found.");
         }
@@ -96,7 +93,7 @@ public class VkSwapChain : IDisposable
         KhrSwapChain = khrSwapChain;
         
 
-        if (KhrSwapChain!.CreateSwapchain(instance.Device.Device, in createInfo, null, out var swapChain) !=
+        if (KhrSwapChain!.CreateSwapchain(VkUtil.Device, in createInfo, null, out var swapChain) !=
             Result.Success)
         {
             throw new Exception("failed to create swap chain!");
@@ -104,11 +101,11 @@ public class VkSwapChain : IDisposable
 
         SwapChain = swapChain;
 
-        KhrSwapChain.GetSwapchainImages(instance.Device.Device, SwapChain, ref imageCount, null);
+        KhrSwapChain.GetSwapchainImages(VkUtil.Device, SwapChain, ref imageCount, null);
         SwapChainImages = new Image[imageCount];
         fixed (Image* swapChainImagesPtr = SwapChainImages)
         {
-            KhrSwapChain.GetSwapchainImages(instance.Device.Device, SwapChain, ref imageCount, swapChainImagesPtr);
+            KhrSwapChain.GetSwapchainImages(VkUtil.Device, SwapChain, ref imageCount, swapChainImagesPtr);
         }
 
         SwapChainImageFormat = surfaceFormat.Format;
@@ -162,7 +159,7 @@ public class VkSwapChain : IDisposable
         return actualExtent;
     }
     
-    private unsafe void CreateImageViews(VkInstance instance)
+    private void CreateImageViews()
     {
         SwapChainImageViews = new ImageView[SwapChainImages!.Length];
 
@@ -199,7 +196,7 @@ public class VkSwapChain : IDisposable
         };
 
 
-        if (_instance.Vk.CreateImageView(_instance.Device.Device, in createInfo, null, out ImageView imageView) != Result.Success)
+        if (VkUtil.Vk.CreateImageView(VkUtil.Device, in createInfo, null, out ImageView imageView) != Result.Success)
         {
             throw new Exception("failed to create image views!");
         }
@@ -211,8 +208,8 @@ public class VkSwapChain : IDisposable
     {
         foreach (var imageView in SwapChainImageViews!)
         {
-            _instance.Vk.DestroyImageView(_instance.Device.Device, imageView, null);
+            VkUtil.Vk.DestroyImageView(VkUtil.Device, imageView, null);
         }
-        KhrSwapChain!.DestroySwapchain(_instance.Device.Device, SwapChain, null);
+        KhrSwapChain!.DestroySwapchain(VkUtil.Device, SwapChain, null);
     }
 }

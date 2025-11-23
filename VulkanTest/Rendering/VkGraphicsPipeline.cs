@@ -1,54 +1,24 @@
-using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
+using VulkanTest.Shaders;
 
 namespace VulkanTest;
 
 public unsafe class VkGraphicsPipeline : IDisposable
 {
-    private readonly VkInstance _instance;
     public PipelineLayout PipelineLayout { get; private set; }
     public Pipeline Pipeline { get; private set; }
     public Framebuffer[]? SwapChainFramebuffers { get; private set; }
     public VkDescriptorSetLayout DescriptorSetLayout { get; private set; }
 
-    public VkGraphicsPipeline(VkInstance instance)
+    public VkGraphicsPipeline(VkRender render)
     {
-        _instance = instance;
-        DescriptorSetLayout = new VkDescriptorSetLayout(instance);
-        CreateGraphicsPipeline(instance);
-        CreateFramebuffers(instance);
+        DescriptorSetLayout = new VkDescriptorSetLayout();
+        CreateGraphicsPipeline(render);
+        CreateFramebuffers(render);
     }
 
-    private void CreateGraphicsPipeline(VkInstance instance)
+    private void CreateGraphicsPipeline(VkRender render)
     {
-        var vertShaderCode = File.ReadAllBytes("Shaders/vert.spv");
-        var fragShaderCode = File.ReadAllBytes("Shaders/frag.spv");
-
-        var vertShaderModule = CreateShaderModule(vertShaderCode, instance);
-        var fragShaderModule = CreateShaderModule(fragShaderCode, instance);
-
-        PipelineShaderStageCreateInfo vertShaderStageInfo = new()
-        {
-            SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.VertexBit,
-            Module = vertShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
-        };
-
-        PipelineShaderStageCreateInfo fragShaderStageInfo = new()
-        {
-            SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.FragmentBit,
-            Module = fragShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
-        };
-
-        var shaderStages = stackalloc[]
-        {
-            vertShaderStageInfo,
-            fragShaderStageInfo
-        };
-
         PipelineInputAssemblyStateCreateInfo inputAssembly = new()
         {
             SType = StructureType.PipelineInputAssemblyStateCreateInfo,
@@ -60,8 +30,8 @@ public unsafe class VkGraphicsPipeline : IDisposable
         {
             X = 0,
             Y = 0,
-            Width = instance.SwapChain.SwapChainExtent.Width,
-            Height = instance.SwapChain.SwapChainExtent.Height,
+            Width = render.SwapChain.SwapChainExtent.Width,
+            Height = render.SwapChain.SwapChainExtent.Height,
             MinDepth = 0,
             MaxDepth = 1,
         };
@@ -69,7 +39,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
         Rect2D scissor = new()
         {
             Offset = { X = 0, Y = 0 },
-            Extent = instance.SwapChain.SwapChainExtent,
+            Extent = render.SwapChain.SwapChainExtent,
         };
 
         PipelineViewportStateCreateInfo viewportState = new()
@@ -97,9 +67,9 @@ public unsafe class VkGraphicsPipeline : IDisposable
         {
             SType = StructureType.PipelineMultisampleStateCreateInfo,
             SampleShadingEnable = false,
-            RasterizationSamples = _instance.Device.MaxMsaaSamples,
+            RasterizationSamples = render.MsaaSamples,
         };
-        
+
         PipelineDepthStencilStateCreateInfo depthStencil = new()
         {
             SType = StructureType.PipelineDepthStencilStateCreateInfo,
@@ -140,7 +110,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
                 PSetLayouts = descriptorSetLayoutPtr
             };
 
-            if (instance.Vk.CreatePipelineLayout(instance.Device.Device, in pipelineLayoutInfo, null,
+            if (VkUtil.Vk.CreatePipelineLayout(VkUtil.Device, in pipelineLayoutInfo, null,
                     out var pipelineLayout) != Result.Success)
             {
                 throw new Exception("failed to create pipeline layout!");
@@ -150,7 +120,13 @@ public unsafe class VkGraphicsPipeline : IDisposable
 
             var bindingDescription = Vertex.GetBindingDescription();
             var attributeDescriptions = Vertex.GetAttributeDescriptions();
+            
+            using var vertexShader = render.ShaderFactory.ImportAndGetShader("Assets/Shaders/vert.spv", ShaderType.Vertex);
+            using var pixelShader = render.ShaderFactory.ImportAndGetShader("Assets/Shaders/frag.spv", ShaderType.Fragment);
 
+            var shaderStages = 
+                stackalloc PipelineShaderStageCreateInfo[]{vertexShader.PipelineShaderStageCreateInfo, pixelShader.PipelineShaderStageCreateInfo};
+            
             fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
             {
                 PipelineVertexInputStateCreateInfo vertexInputInfo = new()
@@ -161,8 +137,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
                     PVertexBindingDescriptions = &bindingDescription,
                     PVertexAttributeDescriptions = attributeDescriptionsPtr,
                 };
-
-
+                
                 GraphicsPipelineCreateInfo pipelineInfo = new()
                 {
                     SType = StructureType.GraphicsPipelineCreateInfo,
@@ -176,16 +151,16 @@ public unsafe class VkGraphicsPipeline : IDisposable
                     PDepthStencilState = &depthStencil,
                     PColorBlendState = &colorBlending,
                     Layout = PipelineLayout,
-                    RenderPass = _instance.RenderPass.RenderPass,
+                    RenderPass = render.RenderPass.RenderPass,
                     Subpass = 0,
                     BasePipelineHandle = default
                 };
 
-                if (instance.Vk.CreateGraphicsPipelines(
-                        instance.Device.Device, 
-                        default, 
-                        1, 
-                        in pipelineInfo, 
+                if (VkUtil.Vk.CreateGraphicsPipelines(
+                        VkUtil.Device,
+                        default,
+                        1,
+                        in pipelineInfo,
                         null,
                         out var pipeline) != Result.Success)
                 {
@@ -195,54 +170,25 @@ public unsafe class VkGraphicsPipeline : IDisposable
                 Pipeline = pipeline;
             }
         }
-
-        instance.Vk.DestroyShaderModule(instance.Device.Device, fragShaderModule, null);
-        instance.Vk.DestroyShaderModule(instance.Device.Device, vertShaderModule, null);
-
-        SilkMarshal.Free((nint)vertShaderStageInfo.PName);
-        SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    private ShaderModule CreateShaderModule(byte[] code, VkInstance instance)
+    private void CreateFramebuffers(VkRender render)
     {
-        ShaderModuleCreateInfo createInfo = new()
-        {
-            SType = StructureType.ShaderModuleCreateInfo,
-            CodeSize = (nuint)code.Length,
-        };
-
-        ShaderModule shaderModule;
-
-        fixed (byte* codePtr = code)
-        {
-            createInfo.PCode = (uint*)codePtr;
-
-            if (instance.Vk.CreateShaderModule(instance.Device.Device, in createInfo, null, out shaderModule) !=
-                Result.Success)
-            {
-                throw new Exception();
-            }
-        }
-
-        return shaderModule;
-    }
-
-    private void CreateFramebuffers(VkInstance instance)
-    {
-        var imageViews = instance.SwapChain.SwapChainImageViews;
+        var imageViews = render.SwapChain.SwapChainImageViews;
         var imageViewsLength = imageViews!.Length;
-        var swapChainExtent = instance.SwapChain.SwapChainExtent;
+        var swapChainExtent = render.SwapChain.SwapChainExtent;
         SwapChainFramebuffers = new Framebuffer[imageViewsLength];
 
         for (int i = 0; i < imageViewsLength; i++)
         {
-            var attachments = new[] {  _instance.ColorImage.ColorImageView, _instance.DepthImage.DepthImageView , imageViews[i],};
+            var attachments = new[]
+                { render.ColorImage.ColorImageView, render.DepthImage.DepthImageView, imageViews[i], };
             fixed (ImageView* attachmentsPtr = attachments)
             {
                 FramebufferCreateInfo framebufferInfo = new()
                 {
                     SType = StructureType.FramebufferCreateInfo,
-                    RenderPass = _instance.RenderPass.RenderPass,
+                    RenderPass = render.RenderPass.RenderPass,
                     AttachmentCount = (uint)attachments.Length,
                     PAttachments = attachmentsPtr,
                     Width = swapChainExtent.Width,
@@ -250,7 +196,7 @@ public unsafe class VkGraphicsPipeline : IDisposable
                     Layers = 1,
                 };
 
-                if (instance.Vk.CreateFramebuffer(instance.Device.Device, in framebufferInfo, null,
+                if (VkUtil.Vk.CreateFramebuffer(VkUtil.Device, in framebufferInfo, null,
                         out SwapChainFramebuffers[i]) != Result.Success)
                 {
                     throw new Exception("failed to create framebuffer!");
@@ -262,11 +208,11 @@ public unsafe class VkGraphicsPipeline : IDisposable
     public void Dispose()
     {
         DescriptorSetLayout.Dispose();
-        
-        foreach (var framebuffer in SwapChainFramebuffers!)
-            _instance.Vk.DestroyFramebuffer(_instance.Device.Device, framebuffer, null);
 
-        _instance.Vk.DestroyPipeline(_instance.Device.Device, Pipeline, null);
-        _instance.Vk.DestroyPipelineLayout(_instance.Device.Device, PipelineLayout, null);
+        foreach (var framebuffer in SwapChainFramebuffers!)
+            VkUtil.Vk.DestroyFramebuffer(VkUtil.Device, framebuffer, null);
+
+        VkUtil.Vk.DestroyPipeline(VkUtil.Device, Pipeline, null);
+        VkUtil.Vk.DestroyPipelineLayout(VkUtil.Device, PipelineLayout, null);
     }
 }

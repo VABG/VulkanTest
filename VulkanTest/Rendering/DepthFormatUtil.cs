@@ -4,21 +4,13 @@ namespace VulkanTest;
 
 public class DepthFormatUtil
 {
-    private readonly VkInstance _instance;
-
-    public DepthFormatUtil(VkInstance instance)
-    {
-        _instance = instance;
-    }
-    
     public Format FindDepthFormat()
     {
-        return FindSupportedFormat(new[]
-            {
+        return FindSupportedFormat([
                 Format.D32Sfloat,
                 Format.D32SfloatS8Uint,
                 Format.D24UnormS8Uint
-            },
+            ],
             ImageTiling.Optimal,
             FormatFeatureFlags.DepthStencilAttachmentBit);
     }
@@ -28,7 +20,7 @@ public class DepthFormatUtil
         foreach (var format in candidates)
         {
             //TODO: Pre-process this info in a class after creating device and instance and save it somewhere
-            _instance.Vk.GetPhysicalDeviceFormatProperties(_instance.Device.PhysicalDevice, format, out var props);
+            VkUtil.Vk.GetPhysicalDeviceFormatProperties(VkUtil.PhysicalDevice, format, out var props);
 
             if (tiling == ImageTiling.Linear && (props.LinearTilingFeatures & features) == features)
             {

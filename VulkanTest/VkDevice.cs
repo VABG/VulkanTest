@@ -19,7 +19,6 @@ public struct QueueFamilyIndices
 
 public unsafe class VkDevice : IDisposable
 {
-    private readonly VkInstance _vkInstance;
     private readonly string[] _deviceExtensions = [KhrSwapchain.ExtensionName];
     
     public PhysicalDevice PhysicalDevice { get; private set; }
@@ -31,18 +30,17 @@ public unsafe class VkDevice : IDisposable
     public QueueFamilyIndices QueueFamilyIndices { get; private set; }
     public SampleCountFlags MaxMsaaSamples { get; private set; }
 
-    public VkDevice(VkInstance vkInstance)
+    public VkDevice(VkValidationLayers? validationLayers, Instance instance, Vk vk, VkWindow window)
     {
-        _vkInstance = vkInstance;
-        CreateSurface(vkInstance);
-        PickPhysicalDevice(vkInstance);
-        CreateLogicalDevice(PhysicalDevice, vkInstance);
-        MaxMsaaSamples = GetMaxUsableSampleCount();
+        CreateSurface(window, instance, vk);
+        PickPhysicalDevice(vk, instance);
+        CreateLogicalDevice(vk, validationLayers);
+        MaxMsaaSamples = GetMaxUsableSampleCount(vk);
     }
 
-    private void CreateLogicalDevice(PhysicalDevice physicalDevice, VkInstance vkInstance)
+    private void CreateLogicalDevice( Vk vk, VkValidationLayers? validationLayers = null)
     {
-        QueueFamilyIndices = FindQueueFamilies(physicalDevice, vkInstance);
+        QueueFamilyIndices = FindQueueFamilies(PhysicalDevice, vk);
         var uniqueQueueFamilies = new[] { QueueFamilyIndices.GraphicsFamily!.Value, QueueFamilyIndices.PresentFamily!.Value };
         // Both values can be the same
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
@@ -80,51 +78,41 @@ public unsafe class VkDevice : IDisposable
             PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(_deviceExtensions)
         };
 
-        if (VkInstance.EnableValidationLayers)
-        {
-            createInfo.EnabledLayerCount = (uint)vkInstance.ValidationLayers!.ValidationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(vkInstance.ValidationLayers!.ValidationLayers);
-        }
+        if (validationLayers != null)
+            createInfo.EnabledLayerCount = (uint)validationLayers.ValidationLayers.Length;
         else
-        {
             createInfo.EnabledLayerCount = 0;
-        }
 
-        if (vkInstance.Vk.CreateDevice(physicalDevice, in createInfo, null, out var device) != Result.Success)
+        if (vk.CreateDevice(PhysicalDevice, in createInfo, null, out var device) != Result.Success)
         {
             throw new Exception("failed to create logical device!");
         }
 
         Device = device;
 
-        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.GraphicsFamily!.Value, 0, out var graphicsQueue);
+        vk.GetDeviceQueue(Device, QueueFamilyIndices.GraphicsFamily!.Value, 0, out var graphicsQueue);
         GraphicsQueue = graphicsQueue;
-        vkInstance.Vk.GetDeviceQueue(Device, QueueFamilyIndices.PresentFamily!.Value, 0, out var presentQueue);
+        vk.GetDeviceQueue(Device, QueueFamilyIndices.PresentFamily!.Value, 0, out var presentQueue);
         PresentQueue = presentQueue;
-
-        if (VkInstance.EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
     }
     
-    private void CreateSurface(VkInstance vkInstance)
+    private void CreateSurface(VkWindow window, Instance instance, Vk vk)
     {
-        if (!vkInstance.Vk.TryGetInstanceExtension<KhrSurface>(vkInstance.Instance, out var khrSurface))
+        if (!vk.TryGetInstanceExtension<KhrSurface>(instance, out var khrSurface))
         {
             throw new NotSupportedException("KHR_surface extension not found.");
         }
         KhrSurface = khrSurface;
-        Surface = vkInstance.Window.Window.VkSurface!.Create<AllocationCallbacks>(vkInstance.Instance.ToHandle(), null).ToSurface();
+        Surface = window.Window.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
     }
     
-    private void PickPhysicalDevice(VkInstance vkInstance)
+    private void PickPhysicalDevice(Vk vk, Instance instance)
     {
-        var devices = vkInstance.Vk.GetPhysicalDevices(vkInstance.Instance);
+        var devices = vk.GetPhysicalDevices(instance);
 
         foreach (var device in devices)
         {
-            if (!IsDeviceSuitable(device, vkInstance)) 
+            if (!IsDeviceSuitable(device, vk)) 
                 continue;
             
             PhysicalDevice = device;
@@ -137,30 +125,30 @@ public unsafe class VkDevice : IDisposable
         }
     }
 
-    private bool IsDeviceSuitable(PhysicalDevice device, VkInstance vkInstance)
+    private bool IsDeviceSuitable(PhysicalDevice device, Vk vk)
     {
-        var indices = FindQueueFamilies(device, vkInstance);
+        var indices = FindQueueFamilies(device, vk);
         if (!indices.IsComplete())
             return false;
         
-        if (!CheckDeviceExtensionsSupport(device, vkInstance))
+        if (!CheckDeviceExtensionsSupport(device, vk))
             return false;
 
-        var swapChainSupport = QuerySwapChainSupport(device, vkInstance);
+        var swapChainSupport = QuerySwapChainSupport(device);
         return swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device, VkInstance vkInstance)
+    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device, Vk vk)
     {
         var indices = new QueueFamilyIndices();
 
         uint queueFamilyPropertyCount = 0;
-        vkInstance.Vk.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilyPropertyCount, null);
+        vk.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilyPropertyCount, null);
 
         var queueFamilies = new QueueFamilyProperties[queueFamilyPropertyCount];
         fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
         {
-            vkInstance.Vk.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilyPropertyCount, queueFamiliesPtr);
+            vk.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilyPropertyCount, queueFamiliesPtr);
         }
 
         uint i = 0;
@@ -189,15 +177,15 @@ public unsafe class VkDevice : IDisposable
         return indices;
     }
     
-    private bool CheckDeviceExtensionsSupport(PhysicalDevice device, VkInstance instance)
+    private bool CheckDeviceExtensionsSupport(PhysicalDevice device, Vk vk)
     {
         uint extensionCount = 0;
-        instance.Vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, null);
+        vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, null);
 
         var availableExtensions = new ExtensionProperties[extensionCount];
         fixed (ExtensionProperties* availableExtensionsPtr = availableExtensions)
         {
-            instance.Vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, availableExtensionsPtr);
+            vk.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extensionCount, availableExtensionsPtr);
         }
 
         var availableExtensionNames = availableExtensions.Select(extension => Marshal.PtrToStringAnsi((IntPtr)extension.ExtensionName)).ToHashSet();
@@ -205,7 +193,7 @@ public unsafe class VkDevice : IDisposable
         return _deviceExtensions.All(availableExtensionNames.Contains);
     }
     
-    public SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physicalDevice, VkInstance instance)
+    public SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physicalDevice)
     {
         var details = new SwapChainSupportDetails();
         
@@ -246,11 +234,11 @@ public unsafe class VkDevice : IDisposable
         return details;
     }
     
-    private SampleCountFlags GetMaxUsableSampleCount()
+    private SampleCountFlags GetMaxUsableSampleCount(Vk vk)
     {
-        _vkInstance.Vk.GetPhysicalDeviceProperties(PhysicalDevice, out var physicalDeviceProperties);
-
-        var counts = physicalDeviceProperties.Limits.FramebufferColorSampleCounts & physicalDeviceProperties.Limits.FramebufferDepthSampleCounts;
+        vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var physicalDeviceProperties);
+        
+        var counts = physicalDeviceProperties.Properties.Limits.FramebufferColorSampleCounts & physicalDeviceProperties.Properties.Limits.FramebufferDepthSampleCounts;
 
         return counts switch
         {
@@ -267,7 +255,7 @@ public unsafe class VkDevice : IDisposable
 
     public void Dispose()
     {
-        _vkInstance.Vk.DestroyDevice(Device, null);
-        KhrSurface!.DestroySurface(_vkInstance.Instance, Surface, null);
+        VkUtil.Vk.DestroyDevice(Device, null);
+        KhrSurface!.DestroySurface(VkUtil.Instance, Surface, null);
     }
 }

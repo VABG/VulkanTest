@@ -5,11 +5,13 @@ namespace VulkanTest;
 
 public unsafe class CommandBufferUtil
 {
-    private readonly VkInstance _instance;
+    private readonly MemoryUtil _memoryUtil;
+    private readonly VkDevice _device;
 
-    public CommandBufferUtil(VkInstance instance)
+    public CommandBufferUtil(MemoryUtil memoryUtil, VkDevice device)
     {
-        _instance = instance;
+        _memoryUtil = memoryUtil;
+        _device = device;
     }
 
     public void CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties, ref Buffer buffer,
@@ -25,55 +27,55 @@ public unsafe class CommandBufferUtil
 
         fixed (Buffer* bufferPtr = &buffer)
         {
-            if (_instance.Vk.CreateBuffer(_instance.Device.Device, in bufferInfo, null, bufferPtr) != Result.Success)
+            if (VkUtil.Vk.CreateBuffer(VkUtil.Device, in bufferInfo, null, bufferPtr) != Result.Success)
             {
                 throw new Exception("failed to create vertex buffer!");
             }
         }
 
-        _instance.Vk.GetBufferMemoryRequirements(_instance.Device.Device, buffer, out var memRequirements);
+        VkUtil.Vk.GetBufferMemoryRequirements(VkUtil.Device, buffer, out var memRequirements);
 
         MemoryAllocateInfo allocateInfo = new()
         {
             SType = StructureType.MemoryAllocateInfo,
             AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = _instance.MemoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
+            MemoryTypeIndex = _memoryUtil.FindMemoryType(memRequirements.MemoryTypeBits, properties),
         };
 
         fixed (DeviceMemory* bufferMemoryPtr = &bufferMemory)
         {
-            if (_instance.Vk.AllocateMemory(_instance.Device.Device, in allocateInfo, null, bufferMemoryPtr) !=
+            if (VkUtil.Vk.AllocateMemory(VkUtil.Device, in allocateInfo, null, bufferMemoryPtr) !=
                 Result.Success)
             {
                 throw new Exception("failed to allocate vertex buffer memory!");
             }
         }
 
-        _instance.Vk.BindBufferMemory(_instance.Device.Device, buffer, bufferMemory, 0);
+        VkUtil.Vk.BindBufferMemory(VkUtil.Device, buffer, bufferMemory, 0);
     }
 
-    public void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
+    public void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size, CommandPool commandPool)
     {
-        CommandBuffer commandBuffer = BeginSingleTimeCommands();
+        CommandBuffer commandBuffer = BeginSingleTimeCommands(commandPool);
 
         BufferCopy copyRegion = new() { Size = size, };
 
-        _instance.Vk.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, in copyRegion);
+        VkUtil.Vk.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, in copyRegion);
 
-        EndSingleTimeCommands(commandBuffer);
+        EndSingleTimeCommands(commandBuffer, commandPool);
     }
     
-    public CommandBuffer BeginSingleTimeCommands()
+    public CommandBuffer BeginSingleTimeCommands(CommandPool commandPool)
     {
         CommandBufferAllocateInfo allocateInfo = new()
         {
             SType = StructureType.CommandBufferAllocateInfo,
             Level = CommandBufferLevel.Primary,
-            CommandPool = _instance.Commands.CommandPool,
+            CommandPool = commandPool,
             CommandBufferCount = 1,
         };
 
-        _instance.Vk.AllocateCommandBuffers(_instance.Device.Device, in allocateInfo, out CommandBuffer commandBuffer);
+        VkUtil.Vk.AllocateCommandBuffers(VkUtil.Device, in allocateInfo, out CommandBuffer commandBuffer);
 
         CommandBufferBeginInfo beginInfo = new()
         {
@@ -81,14 +83,14 @@ public unsafe class CommandBufferUtil
             Flags = CommandBufferUsageFlags.OneTimeSubmitBit,
         };
 
-        _instance.Vk.BeginCommandBuffer(commandBuffer, in beginInfo);
+        VkUtil.Vk.BeginCommandBuffer(commandBuffer, in beginInfo);
 
         return commandBuffer;
     }
 
-    public void EndSingleTimeCommands(CommandBuffer commandBuffer)
+    public void EndSingleTimeCommands(CommandBuffer commandBuffer, CommandPool commandPool)
     {
-        _instance.Vk.EndCommandBuffer(commandBuffer);
+        VkUtil.Vk.EndCommandBuffer(commandBuffer);
 
         SubmitInfo submitInfo = new()
         {
@@ -97,9 +99,9 @@ public unsafe class CommandBufferUtil
             PCommandBuffers = &commandBuffer,
         };
 
-        _instance.Vk.QueueSubmit(_instance.Device.GraphicsQueue, 1, in submitInfo, default);
-        _instance.Vk.QueueWaitIdle(_instance.Device.GraphicsQueue);
+        VkUtil.Vk.QueueSubmit(_device.GraphicsQueue, 1, in submitInfo, default);
+        VkUtil.Vk.QueueWaitIdle(_device.GraphicsQueue);
 
-        _instance.Vk.FreeCommandBuffers(_instance.Device.Device,_instance.Commands.CommandPool, 1, in commandBuffer);
+        VkUtil.Vk.FreeCommandBuffers(VkUtil.Device, commandPool, 1, in commandBuffer);
     }
 }

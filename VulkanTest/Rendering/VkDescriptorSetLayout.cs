@@ -4,12 +4,10 @@ namespace VulkanTest;
 
 public class VkDescriptorSetLayout : IDisposable
 {
-    private readonly VkInstance _instance;
     public DescriptorSetLayout DescriptorSetLayout;
 
-    public VkDescriptorSetLayout(VkInstance instance)
+    public VkDescriptorSetLayout()
     {
-        _instance = instance;
         CreateDescriptorSetLayout();
     }
 
@@ -45,7 +43,7 @@ public class VkDescriptorSetLayout : IDisposable
                 PBindings = bindingsPtr,
             };
             
-            if (_instance.Vk.CreateDescriptorSetLayout(_instance.Device.Device,
+            if (VkUtil.Vk.CreateDescriptorSetLayout(VkUtil.Device,
                     in layoutInfo,
                     null,
                     descriptorSetLayoutPtr) != Result.Success)
@@ -57,6 +55,6 @@ public class VkDescriptorSetLayout : IDisposable
 
     public unsafe void Dispose()
     {
-        _instance.Vk.DestroyDescriptorSetLayout(_instance.Device.Device, DescriptorSetLayout, null);
+        VkUtil.Vk.DestroyDescriptorSetLayout(VkUtil.Device, DescriptorSetLayout, null);
     }
 }

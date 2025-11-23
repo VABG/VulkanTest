@@ -5,11 +5,11 @@ namespace VulkanTest;
 
 public unsafe class VkDescriptorPool : IDisposable
 {
-    private readonly VkInstance _instance;
+    private readonly VkRender _instance;
     private DescriptorPool _descriptorPool;
     public DescriptorSet[]? DescriptorSets { get; private set; }
     
-    public VkDescriptorPool(VkInstance instance)
+    public VkDescriptorPool(VkRender instance)
     {
         _instance = instance;
         CreateDescriptorPool();
@@ -45,7 +45,7 @@ public unsafe class VkDescriptorPool : IDisposable
                 MaxSets = (uint)swapChainImagesLength,
             };
             
-            if (_instance.Vk.CreateDescriptorPool(_instance.Device.Device, in poolInfo, null, descriptorPoolPtr) != Result.Success)
+            if (VkUtil.Vk.CreateDescriptorPool(VkUtil.Device, in poolInfo, null, descriptorPoolPtr) != Result.Success)
             {
                 throw new Exception("failed to create descriptor pool!");
             }
@@ -74,7 +74,7 @@ public unsafe class VkDescriptorPool : IDisposable
             DescriptorSets = new DescriptorSet[swapChainImagesCount];
             fixed (DescriptorSet* descriptorSetsPtr = DescriptorSets)
             {
-                if (_instance.Vk.AllocateDescriptorSets(_instance.Device.Device,
+                if (VkUtil.Vk.AllocateDescriptorSets(VkUtil.Device,
                         in allocateInfo,
                         descriptorSetsPtr) != Result.Success)
                 {
@@ -126,7 +126,7 @@ public unsafe class VkDescriptorPool : IDisposable
 
             fixed (WriteDescriptorSet* descriptorWritesPtr = descriptorWrites)
             {
-                _instance.Vk.UpdateDescriptorSets(_instance.Device.Device,
+                VkUtil.Vk.UpdateDescriptorSets(VkUtil.Device,
                     (uint)descriptorWrites.Length,
                     descriptorWritesPtr,
                     0,
@@ -137,6 +137,6 @@ public unsafe class VkDescriptorPool : IDisposable
 
     public void Dispose()
     {
-        _instance.Vk.DestroyDescriptorPool(_instance.Device.Device, _descriptorPool, null);
+        VkUtil.Vk.DestroyDescriptorPool(VkUtil.Device, _descriptorPool, null);
     }
 }
