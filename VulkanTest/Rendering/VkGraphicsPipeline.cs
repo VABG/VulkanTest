@@ -1,7 +1,8 @@
 using Silk.NET.Vulkan;
+using VulkanTest.MeshData;
 using VulkanTest.Shaders;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public unsafe class VkGraphicsPipeline : IDisposable
 {
@@ -121,8 +122,8 @@ public unsafe class VkGraphicsPipeline : IDisposable
             var bindingDescription = Vertex.GetBindingDescription();
             var attributeDescriptions = Vertex.GetAttributeDescriptions();
             
-            using var vertexShader = render.ShaderFactory.ImportAndGetShader("Assets/Shaders/vert.spv", ShaderType.Vertex);
-            using var pixelShader = render.ShaderFactory.ImportAndGetShader("Assets/Shaders/frag.spv", ShaderType.Fragment);
+            using var vertexShader = render.ShaderFactory.GetShader("Assets/Shaders/vert.spv", ShaderType.Vertex);
+            using var pixelShader = render.ShaderFactory.GetShader("Assets/Shaders/frag.spv", ShaderType.Fragment);
 
             var shaderStages = 
                 stackalloc PipelineShaderStageCreateInfo[]{vertexShader.PipelineShaderStageCreateInfo, pixelShader.PipelineShaderStageCreateInfo};

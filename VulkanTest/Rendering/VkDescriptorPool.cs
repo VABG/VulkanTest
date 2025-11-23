@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using Silk.NET.Vulkan;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public unsafe class VkDescriptorPool : IDisposable
 {

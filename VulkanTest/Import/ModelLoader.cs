@@ -1,7 +1,8 @@
 using Silk.NET.Assimp;
 using Silk.NET.Maths;
+using VulkanTest.MeshData;
 
-namespace VulkanTest;
+namespace VulkanTest.Import;
 
 public static class ModelLoader
 {

@@ -3,7 +3,7 @@ using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public struct SwapChainSupportDetails
 {

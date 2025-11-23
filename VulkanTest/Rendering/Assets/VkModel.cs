@@ -1,10 +1,12 @@
 using System.Runtime.CompilerServices;
 using Silk.NET.Vulkan;
+using VulkanTest.Import;
+using VulkanTest.MeshData;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering.Assets;
 
-public unsafe class VkModelBuffer : IDisposable
+public unsafe class VkModel : IDisposable
 {
     private readonly Model _model;
 
@@ -14,13 +16,11 @@ public unsafe class VkModelBuffer : IDisposable
     public Buffer IndexBuffer;
     private readonly DeviceMemory _indexBufferMemory;
 
-    public VkModelBuffer(VkRender render, Model model)
+    public VkModel(VkRender render, Model model)
     {
         _model = model;
         CreateBuffer(render, _model.Vertices, ref VertexBuffer, ref _vertexBufferMemory);
         CreateBuffer(render, _model.Indices, ref IndexBuffer, ref _indexBufferMemory);
-        // CreateVertexBuffer(render);
-        // CreateIndexBuffer(render);
     }
 
     public uint GetIndicesCount() => (uint)_model.Indices.Length;

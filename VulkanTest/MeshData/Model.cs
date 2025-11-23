@@ -1,4 +1,4 @@
-namespace VulkanTest;
+namespace VulkanTest.MeshData;
 
 public class Model(Vertex[] vertices,  uint[] indices)
 {

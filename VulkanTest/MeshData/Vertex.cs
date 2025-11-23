@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
-namespace VulkanTest;
+namespace VulkanTest.MeshData;
 
 public struct Vertex : IEquatable<Vertex>
 {

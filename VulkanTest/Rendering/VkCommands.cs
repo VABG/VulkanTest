@@ -1,7 +1,7 @@
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public unsafe class VkCommands : IDisposable
 {
@@ -103,7 +103,7 @@ public unsafe class VkCommands : IDisposable
                 PipelineBindPoint.Graphics,
                 render.GraphicsPipeline.Pipeline);
 
-            var vertexBuffers = new[] { render.ModelBuffer.VertexBuffer };
+            var vertexBuffers = new[] { render.Model.VertexBuffer };
             var offsets = new ulong[] { 0 };
 
             fixed (ulong* offsetsPtr = offsets)
@@ -117,7 +117,7 @@ public unsafe class VkCommands : IDisposable
             }
 
             VkUtil.Vk.CmdBindIndexBuffer(CommandBuffers![i],
-                render.ModelBuffer.IndexBuffer,
+                render.Model.IndexBuffer,
                 0,
                 IndexType.Uint32);
 
@@ -131,7 +131,7 @@ public unsafe class VkCommands : IDisposable
                 null);
 
             VkUtil.Vk.CmdDrawIndexed(CommandBuffers[i],
-                render.ModelBuffer.GetIndicesCount(),
+                render.Model.GetIndicesCount(),
                 1,
                 0,
                 0,

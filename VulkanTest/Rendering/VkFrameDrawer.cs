@@ -2,7 +2,7 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public unsafe class VkFrameDrawer : IDisposable
 {

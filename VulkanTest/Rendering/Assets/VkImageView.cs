@@ -1,6 +1,6 @@
 using Silk.NET.Vulkan;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering.Assets;
 
 public class VkImageView : IDisposable
 {

@@ -1,4 +1,3 @@
-using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using VulkanTest.Shaders;
 
@@ -6,12 +5,7 @@ namespace VulkanTest.Import;
 
 public class ShaderFactory
 {
-    private Dictionary<string, ShaderData> _loadedShaders = [];
-
-    public ShaderFactory()
-    {
-        
-    }
+    private readonly Dictionary<string, ShaderData> _loadedShaders = [];
     
     public void ImportShader(string path, ShaderType shaderType, bool forceReload = false)
     {
@@ -22,7 +16,7 @@ public class ShaderFactory
         _loadedShaders[path] = new ShaderData(vertShaderCode, shaderType);
     }
 
-    public VkShader GetShader(string path)
+    private VkShader GetShader(string path)
     {
         if (!_loadedShaders.ContainsKey(path))
             throw new Exception($"Shader not loaded: {path}");
@@ -31,7 +25,7 @@ public class ShaderFactory
         return new VkShader(CreateShaderModule(data.ByteCode), data.ShaderType);
     }
 
-    public VkShader ImportAndGetShader(string path, ShaderType shaderType, bool forceReload = false)
+    public VkShader GetShader(string path, ShaderType shaderType, bool forceReload = false)
     {
         ImportShader(path, shaderType, forceReload);
         return GetShader(path);

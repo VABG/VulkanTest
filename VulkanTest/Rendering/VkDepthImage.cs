@@ -1,10 +1,9 @@
 using Silk.NET.Vulkan;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public class VkDepthImage : IDisposable
 {
-    private readonly VkInstance _instance;
     private Image _depthImage;
     private DeviceMemory _depthImageMemory;
     public ImageView DepthImageView { get; private set; }

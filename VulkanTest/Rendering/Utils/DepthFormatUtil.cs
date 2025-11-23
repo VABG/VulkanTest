@@ -1,6 +1,6 @@
 using Silk.NET.Vulkan;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering.Utils;
 
 public class DepthFormatUtil
 {

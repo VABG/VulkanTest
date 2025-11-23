@@ -1,6 +1,6 @@
 using Silk.NET.Maths;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 struct UniformBufferObject
 {

@@ -3,19 +3,14 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public class VkUniformBuffer : IDisposable
 {
-    public Buffer[] UniformBuffers;
-    private DeviceMemory[]? _uniformBuffersMemory;
+    public readonly Buffer[] UniformBuffers;
+    private readonly DeviceMemory[]? _uniformBuffersMemory;
     
     public VkUniformBuffer(VkRender render)
-    {
-        CreateUniformBuffers(render);
-    }
-
-    private void CreateUniformBuffers(VkRender render)
     {
         var bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
 
@@ -52,14 +47,9 @@ public class VkUniformBuffer : IDisposable
     public unsafe void Dispose()
     {
         foreach (var buffer in UniformBuffers)
-        {
             VkUtil.Vk.DestroyBuffer(VkUtil.Device, buffer, null);
-        }
         
-        foreach (var bufferMemory in _uniformBuffersMemory)
-        {
+        foreach (var bufferMemory in _uniformBuffersMemory!)
             VkUtil.Vk.FreeMemory(VkUtil.Device, bufferMemory, null);
-        }
-
     }
 }

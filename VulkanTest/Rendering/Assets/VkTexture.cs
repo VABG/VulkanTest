@@ -1,7 +1,7 @@
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering.Assets;
 
 public unsafe class VkTexture : IDisposable
 {

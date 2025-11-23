@@ -1,18 +1,17 @@
 using Silk.NET.Core.Native;
-using Silk.NET.OpenGL;
 using Silk.NET.Vulkan;
 
 namespace VulkanTest.Shaders;
 
 public class VkShader : IDisposable
 {
-    public readonly ShaderModule ShaderModule;
+    private readonly ShaderModule _shaderModule;
     private readonly ShaderType _shaderType;
     public PipelineShaderStageCreateInfo PipelineShaderStageCreateInfo => GetCreateInfo();
 
     public VkShader(ShaderModule shaderModule, ShaderType shaderType)
     {
-        ShaderModule = shaderModule;
+        _shaderModule = shaderModule;
         _shaderType = shaderType;
     }
 
@@ -21,7 +20,7 @@ public class VkShader : IDisposable
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = GetShaderStageFlags(),
-            Module = ShaderModule,
+            Module = _shaderModule,
             PName = (byte*)SilkMarshal.StringToPtr("main")
         };
 
@@ -37,7 +36,7 @@ public class VkShader : IDisposable
     
     public unsafe void Dispose()
     {
-        VkUtil.Vk.DestroyShaderModule(VkUtil.Device, ShaderModule, null);
+        VkUtil.Vk.DestroyShaderModule(VkUtil.Device, _shaderModule, null);
         SilkMarshal.Free((nint)PipelineShaderStageCreateInfo.PName);
     }
 }

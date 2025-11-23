@@ -1,8 +1,10 @@
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using VulkanTest.Import;
+using VulkanTest.Rendering.Assets;
+using VulkanTest.Rendering.Utils;
 
-namespace VulkanTest;
+namespace VulkanTest.Rendering;
 
 public class VkRender : IDisposable
 {
@@ -21,7 +23,7 @@ public class VkRender : IDisposable
     public VkImageView ImageView { get; private set; }
     
     public CommandBufferUtil CommandBufferUtil { get; private set; }
-    public VkModelBuffer ModelBuffer { get; private set; }
+    public VkModel Model { get; private set; }
     public VkUniformBuffer UniformBuffer { get; private set; } 
     public VkDescriptorPool DescriptorPool { get; private set; }
 
@@ -51,7 +53,7 @@ public class VkRender : IDisposable
         Commands = new VkCommands(_device);
 
         ImageView = new VkImageView(this);
-        ModelBuffer = new VkModelBuffer(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
+        Model = new VkModel(this, ModelLoader.LoadModel(@"Assets\viking_room.obj"));
         UniformBuffer = new VkUniformBuffer(this);
         DescriptorPool = new VkDescriptorPool(this);
         Commands.CreateCommandBuffers(this);
@@ -98,7 +100,7 @@ public class VkRender : IDisposable
     {
         DisposeSwapChain();
         ImageView.Dispose();
-        ModelBuffer.Dispose();
+        Model.Dispose();
     }
     
     private void DisposeSwapChain()

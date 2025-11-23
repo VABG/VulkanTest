@@ -3,6 +3,7 @@ using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
+using VulkanTest.Rendering;
 
 namespace VulkanTest;
 
@@ -31,6 +32,7 @@ public unsafe class VkInstance : IDisposable
             _validationLayers = new VkValidationLayers(_vk, _instance);
         _device = new VkDevice(_validationLayers, _instance, _vk, _window);
         VkUtil.Populate(_vk, _instance, _device.Device, _device.PhysicalDevice );
+        
         _render = new VkRender(_window, _device);
     }
     
@@ -105,7 +107,7 @@ public unsafe class VkInstance : IDisposable
 
     public void Dispose()
     {
-        
+        _render.Dispose();
         DisposeDeviceAndWindow();
     }
 
