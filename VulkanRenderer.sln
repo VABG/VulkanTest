@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vulkan", "Vulkan\Vulkan.csproj", "{6774ED7B-6E1A-4B20-B0A9-1389C084FCE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioEngine", "AudioEngine\AudioEngine.csproj", "{7782A3DB-E107-4F91-8E67-1DA11797843F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Audio", "Audio\Audio.csproj", "{7782A3DB-E107-4F91-8E67-1DA11797843F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUI", "EditorUI\EditorUI.csproj", "{EA737175-4BB2-436F-8D41-2BBB317AF9B0}"
 EndProject

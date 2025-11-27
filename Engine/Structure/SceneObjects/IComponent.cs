@@ -1,6 +1,6 @@
 namespace Engine.Structure.SceneObjects;
 
-public class iComponent
+public interface IComponent
 {
     
 }
