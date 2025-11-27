@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUI", "EditorUI\Editor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project", "Project\Project.csproj", "{91E2F23E-0F5F-43C5-B325-546219F3A8DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine", "Engine\Engine.csproj", "{2F4EB449-1DF5-41DD-A89F-C66DB764A56C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{91E2F23E-0F5F-43C5-B325-546219F3A8DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91E2F23E-0F5F-43C5-B325-546219F3A8DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91E2F23E-0F5F-43C5-B325-546219F3A8DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F4EB449-1DF5-41DD-A89F-C66DB764A56C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F4EB449-1DF5-41DD-A89F-C66DB764A56C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F4EB449-1DF5-41DD-A89F-C66DB764A56C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F4EB449-1DF5-41DD-A89F-C66DB764A56C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
