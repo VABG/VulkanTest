@@ -21,7 +21,7 @@ public class Program
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets"), 
             true);
         
-        _instance = new VkInstance(Width, Height);
+        _instance = new VkInstance(Width, Height, false);
         MainLoop();
         CleanUp();
     }

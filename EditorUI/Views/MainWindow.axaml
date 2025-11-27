@@ -14,5 +14,9 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-    <ContentControl Content="{Binding VulkanControlContent}"/>
+    <StackPanel Background="DarkSlateBlue">
+        <Button Command="{Binding StartVulkan}" Content="Start Vulkan"/>
+        <ContentControl Width="512" Height="512" Content="{Binding VulkanView}"/>        
+    </StackPanel>
+    
 </Window>

@@ -33,6 +33,7 @@ public unsafe class VkDevice : IDisposable
 
     public VkDevice(VkValidationLayers? validationLayers, Instance instance, Vk vk, VkWindow window)
     {
+        //TODO: Rewrite to use a pre-selected Physical Device
         CreateSurface(window, instance, vk, out var khrSurface, out var surface);
         KhrSurface = khrSurface;
         Surface = surface;

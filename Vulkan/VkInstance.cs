@@ -26,9 +26,9 @@ public unsafe class VkInstance : IDisposable
 
     public nint Hwnd => _window.Hwnd;
     
-    public VkInstance(int resolutionWidth, int resolutionHeight, bool subWindow = false)
+    public VkInstance(int resolutionWidth, int resolutionHeight, bool hasParentView)
     {
-        _window = new VkWindow(resolutionWidth, resolutionHeight, subWindow);
+        _window = new VkWindow(resolutionWidth, resolutionHeight, hasParentView);
         _vk = Vk.GetApi();
         _instance = CreateInstance(_vk);
         if (EnableValidationLayers)
@@ -110,6 +110,11 @@ public unsafe class VkInstance : IDisposable
     {
         _window.Window.Render += WindowOnRender;
         _window.Run();
+    }
+    
+    public void Render()
+    {
+        _render.Render();
     }
 
     private void WindowOnRender(double obj)

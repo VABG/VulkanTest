@@ -1,15 +1,23 @@
-﻿using EditorUI.VulkanControl;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Threading;
+using EditorUI.VulkanControl;
+using Vulkan;
 
 namespace EditorUI.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    public string Greeting { get; } = "Welcome to Avalonia!";
-
-    public SilkHostVulkan VulkanControlContent { get; }
+    public VulkanViewModel VulkanView { get; }
     
     public MainWindowViewModel()
     {
-        VulkanControlContent = new SilkHostVulkan();;
+        VulkanView = new VulkanViewModel();
+    }
+
+    public void StartVulkan()
+    {
+
     }
 }
